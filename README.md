@@ -1,9 +1,20 @@
 # Streak
 
-A private, GitHub-inspired record of the goals and habits you keep.
+A private Laravel Blade dashboard for the goals and habits you keep.
 
-## Foundation preview
+## Local setup
 
-Open `index.html` in a browser. This branch establishes the visual system and interactive reference page only; persistence, authentication, and the Laravel API are deliberately not yet implemented.
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+npm install
+npm run build
+php artisan serve
+```
 
-See [the foundation contract](docs/foundation.md) for shared components and agent boundaries.
+The application uses SQLite locally by default. Production will use MySQL on shared hosting, with the domain document root pointed at `public/`.
+
+## Foundation
+
+The current reference implementation is a fixed-height desktop dashboard with internally scrollable panels and tabbed mobile sections. See [the foundation contract](docs/foundation.md) before starting feature work.
