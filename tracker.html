@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Track daily commitments and watch your year of consistency take shape.">
+  <title>Streak — Core tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&amp;family=Newsreader:opsz,wght@6..72,500;6..72,600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/features/core-streak-tracker.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to today’s habits</a>
+  <header class="site-header">
+    <a class="wordmark" href="/" aria-label="Streak home">streak<span>.</span></a>
+    <nav aria-label="Primary navigation"><a class="is-active" href="/" aria-current="page">Today</a><a href="#map">Map</a><a href="#habits">Habits</a><a href="#review">Review</a></nav>
+    <button class="avatar" type="button" aria-label="Open account menu">VK</button>
+  </header>
+
+  <main id="main-content" class="tracker-main">
+    <section class="intro tracker-intro" aria-labelledby="page-title">
+      <p class="eyebrow"><span aria-hidden="true">●</span> <span id="today-label">Today</span></p>
+      <div class="intro-heading">
+        <h1 id="page-title">Keep the promise<br>in front of <em>you.</em></h1>
+        <p>Check in once. Let the year tell the longer story.</p>
+      </div>
+      <div class="daily-score" id="daily-score" aria-live="polite" aria-atomic="true">
+        <span class="score-number" id="score-number">0<span>/0</span></span>
+        <span class="score-label">commitments<br>kept today</span>
+        <div class="score-track" aria-hidden="true"><span id="score-track"></span></div>
+        <span class="score-percent" id="score-percent">0%</span>
+      </div>
+    </section>
+
+    <section id="habits" class="today-panel tracker-today" aria-labelledby="today-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Daily ledger</p>
+          <h2 id="today-heading">What will you show up for?</h2>
+        </div>
+        <button class="text-button" id="show-add-form" type="button" aria-expanded="false" aria-controls="habit-form-wrap">Add habit <span aria-hidden="true">+</span></button>
+      </div>
+
+      <div class="habit-form-wrap" id="habit-form-wrap" hidden>
+        <form id="habit-form" novalidate>
+          <div class="field">
+            <label for="habit-name">Habit name <span aria-hidden="true">*</span></label>
+            <input id="habit-name" name="name" type="text" maxlength="60" autocomplete="off" aria-describedby="name-hint name-error" required>
+            <small id="name-hint">A short daily action, such as “Morning prayers”.</small>
+            <p class="field-error" id="name-error" aria-live="assertive"></p>
+          </div>
+          <div class="field">
+            <label for="habit-category">Category <span aria-hidden="true">*</span></label>
+            <input id="habit-category" name="category" type="text" maxlength="30" list="category-options" autocomplete="off" aria-describedby="category-error" required>
+            <datalist id="category-options">
+              <option value="Faith"></option>
+              <option value="Health"></option>
+              <option value="Work &amp; building"></option>
+              <option value="Personal discipline"></option>
+              <option value="Learning"></option>
+            </datalist>
+            <p class="field-error" id="category-error" aria-live="assertive"></p>
+          </div>
+          <div class="form-actions">
+            <button class="primary-action" type="submit">Add commitment</button>
+            <button class="secondary-action" id="cancel-add" type="button">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <ul class="habit-list tracker-habit-list" id="habit-list" aria-label="Today’s habits"></ul>
+      <div class="empty-state" id="empty-state" hidden>
+        <span aria-hidden="true">○</span>
+        <h3>Your daily ledger is open.</h3>
+        <p>Add one small commitment to begin shaping your year.</p>
+        <button class="primary-action" id="empty-add" type="button">Add your first habit</button>
+      </div>
+      <p class="save-status" id="save-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <aside class="tracker-note" id="review" aria-label="Version one boundaries">
+      <p class="eyebrow">This first version</p>
+      <p>Your habits and check-ins stay in this browser. Editing, schedules, accounts, and syncing arrive in later releases.</p>
+    </aside>
+
+    <section id="map" class="map-panel tracker-map" aria-labelledby="map-heading">
+      <div class="map-topline">
+        <div>
+          <p class="eyebrow">Your record</p>
+          <h2 id="map-heading">A year of keeping promises.</h2>
+        </div>
+        <span class="year-badge" id="map-year"></span>
+      </div>
+      <div class="map-summary">
+        <p><strong id="annual-total">0</strong> commitments kept this year</p>
+        <p><span class="flame" aria-hidden="true">✦</span> <strong id="best-streak">0</strong> day best streak</p>
+      </div>
+      <div class="heatmap-wrap" tabindex="0" id="heatmap-wrap" aria-describedby="map-instructions">
+        <p class="sr-only" id="map-instructions">Use Tab to move through days with recorded activity.</p>
+        <div class="month-labels" id="month-labels" aria-hidden="true"></div>
+        <div class="map-body">
+          <div class="weekday-labels" aria-hidden="true"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span></span></div>
+          <div id="heatmap" class="heatmap" role="list" aria-label="Daily completion map"></div>
+        </div>
+      </div>
+      <div class="map-footer">
+        <p>Less</p>
+        <div class="legend" aria-label="Map intensity legend"><i></i><i></i><i></i><i></i><i></i></div>
+        <p>More</p>
+        <p class="today-map-summary" id="today-map-summary">Today: 0 commitments</p>
+      </div>
+    </section>
+  </main>
+
+  <footer><span>Built as a private practice.</span><span>Designed by <a href="https://thisuncle.co.tz"><strong>ThisUncle Technologies</strong></a></span></footer>
+  <script src="assets/js/features/core-streak-tracker.js"></script>
+</body>
+</html>
