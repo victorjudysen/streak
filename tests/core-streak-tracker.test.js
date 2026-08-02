@@ -172,6 +172,11 @@ assert.equal(
   '1',
   'updates today’s heatmap intensity',
 );
+assert.equal(
+  document.querySelector('#heatmap').children.find((day) => day.className.includes('is-today')).getAttribute('role'),
+  null,
+  'preserves native button semantics for heatmap days',
+);
 
 document = boot(storage);
 assert.equal(

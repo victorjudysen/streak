@@ -251,7 +251,6 @@
       square.dataset.level = String(intensityLevel(count));
       square.style.gridColumn = String(Math.floor(cellIndex / 7) + 1);
       square.style.gridRow = String((cellIndex % 7) + 1);
-      square.setAttribute('role', 'listitem');
       square.setAttribute('aria-label', `${readableDate}: ${count} ${count === 1 ? 'commitment' : 'commitments'} completed`);
       square.title = square.getAttribute('aria-label');
       square.tabIndex = count > 0 || dateKey === todayKey ? 0 : -1;
