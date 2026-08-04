@@ -2,10 +2,20 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed();
+    }
+
     public function test_dashboard_foundation_renders_successfully(): void
     {
         $this->get(route('dashboard'))
@@ -13,6 +23,9 @@ class DashboardTest extends TestCase
             ->assertSee('Today’s')
             ->assertSee('promises.')
             ->assertSee('A year of showing up.')
+            ->assertSee('Changes are saved automatically.')
+            ->assertSee('Still forming')
+            ->assertSee('0 of 1 planned days completed.')
             ->assertSee('Designed by')
             ->assertSee('ThisUncle Technologies');
     }

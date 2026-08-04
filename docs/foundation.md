@@ -31,6 +31,9 @@ Sub-agents may read and reuse the following files but must not modify them:
 
 If a feature needs a shared change, report it to the Lead Agent. Feature-specific Blade partials, controllers, styles, JavaScript, migrations, models, tests, and routes belong to the feature branch.
 
-## Current behavior
+## Foundation scope at merge
 
 The dashboard uses demo data and ephemeral check-off interactions. Database persistence, habit creation, authentication, scheduling, and production deployment intentionally remain outside the foundation.
+
+Feature branches may replace that demonstration behavior while continuing to
+honor the dashboard and shared-file contracts above.
