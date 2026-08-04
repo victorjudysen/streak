@@ -1,22 +1,36 @@
-# Streak foundation
+# Laravel dashboard foundation
 
-This reference page is the contract for all v1 feature work. It intentionally uses no framework or build step, so Netlify can deploy it as a static site.
+This document is the source of truth for all feature branches after `foundation/laravel-dashboard` is merged.
 
-## Established UI system
+## Architecture
 
-- **Voice:** private practice, disciplined but non-punitive. Avoid dashboard clichés and gamified pressure.
-- **Typeface:** Newsreader for reflective display copy; DM Sans for UI; DM Mono for dates, numbers, and labels.
-- **Colour:** warm paper and deep botanical ink, with moss activity levels. Clay is reserved for the present-day marker and keyboard focus.
-- **Grid:** desktop content width is 1240px; panels are squared with minimal radii; mobile collapses to one column.
-- **Map states:** `0` is no completion, `1–4` are increasing completion levels. A future API must also distinguish `not scheduled` from `scheduled but missed`.
+- Laravel 12 and PHP 8.2+ support common shared-hosting environments.
+- Blade owns page structure and server-rendered content.
+- Plain token-driven CSS is compiled by Vite during CI; the production server does not need Node.js.
+- Small vanilla JavaScript modules provide immediate interface feedback.
+- The production web root must point to Laravel's `public/` directory.
 
-## Shared components
+## Dashboard contract
 
-- `site-header`: wordmark, primary navigation, account trigger
-- `eyebrow`: mono, uppercase context label
-- `text-button`: underlined secondary action
-- `habit-check`: semantic pressable completion control (`aria-pressed`)
-- `heatmap` and `day`: 53-column, seven-row annual activity grid
-- site footer: required ThisUncle Technologies credit
+- Desktop uses a fixed viewport shell. The document must not vertically scroll.
+- Panels may scroll internally when their content exceeds available space.
+- Mobile uses three tabs: Today, Map, and Insights. It must not collapse into one long page.
+- `resources/views/layouts/app.blade.php` owns the shared header and footer.
+- `resources/css/app.css` owns primitive, semantic, and component tokens plus shared layout/components.
+- The footer credit and link to ThisUncle Technologies are required on every page.
 
-Feature agents may use these assets but must not alter `assets/css/tokens.css`, `assets/css/styles.css`, shared header/footer markup, or this file. Proposed shared changes must be returned to the Lead Agent.
+## Shared-file boundary
+
+Sub-agents may read and reuse the following files but must not modify them:
+
+- `resources/views/layouts/app.blade.php`
+- `resources/css/app.css`
+- `resources/js/app.js`
+- `docs/foundation.md`
+- shared header and footer markup
+
+If a feature needs a shared change, report it to the Lead Agent. Feature-specific Blade partials, controllers, styles, JavaScript, migrations, models, tests, and routes belong to the feature branch.
+
+## Current behavior
+
+The dashboard uses demo data and ephemeral check-off interactions. Database persistence, habit creation, authentication, scheduling, and production deployment intentionally remain outside the foundation.

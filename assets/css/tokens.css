@@ -1,8 +1,0 @@
-:root {
-  --ink-950:#14231f; --ink-800:#263933; --ink-600:#64736c; --canvas:#f2f0e8; --paper:#fbfaf5; --line:#d9d7cd;
-  --moss-100:#dce8d5; --moss-300:#a7c69a; --moss-500:#6b9b5b; --moss-700:#367048; --moss-900:#195135; --clay:#c75e3f; --sun:#e6a93e; --white:#fff;
-  --color-page:var(--canvas); --color-surface:var(--paper); --color-text:var(--ink-950); --color-muted:var(--ink-600); --color-border:var(--line); --color-accent:var(--moss-700); --color-accent-strong:var(--moss-900);
-  --font-body:"DM Sans",sans-serif; --font-display:"Newsreader",Georgia,serif; --font-mono:"DM Mono",monospace;
-  --space-1:.5rem; --space-2:.75rem; --space-3:1rem; --space-4:1.5rem; --space-5:2rem; --space-6:3rem; --space-7:4.5rem; --radius-sm:.35rem; --shadow:0 22px 60px rgb(20 35 31 / 8%);
-  --button-focus:0 0 0 3px rgb(54 112 72 / 30%); --map-empty:#e7e7de; --map-1:#dce8d5; --map-2:#a7c69a; --map-3:#6b9b5b; --map-4:#367048;
-}
