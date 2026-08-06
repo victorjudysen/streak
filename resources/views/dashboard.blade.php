@@ -21,24 +21,32 @@
 
         <div class="score-block" aria-live="polite" aria-atomic="true">
             <div class="score-copy"><strong data-score>{{ $completedCount }}/{{ $habits->count() }}</strong><span>kept today</span></div>
-            <div class="score-track" aria-hidden="true"><span data-score-track style="width: {{ round(($completedCount / $habits->count()) * 100) }}%"></span></div>
+            <div class="score-track" aria-hidden="true"><span data-score-track style="width: {{ $habits->isNotEmpty() ? round(($completedCount / $habits->count()) * 100) : 0 }}%"></span></div>
         </div>
 
         <div class="habit-scroll" aria-label="Today’s habits">
             <ul class="habit-list">
                 @foreach ($habits as $habit)
+                    @php($completion = $todayCompletions->get($habit->id))
                     <li>
-                        <button class="habit-check {{ $habit['complete'] ? 'is-complete' : '' }}" type="button" aria-pressed="{{ $habit['complete'] ? 'true' : 'false' }}" data-habit-check>
-                            <span class="check-mark" aria-hidden="true">{{ $habit['complete'] ? '✓' : '' }}</span>
-                            <span class="habit-copy"><strong>{{ $habit['name'] }}</strong><small>{{ $habit['category'] }}</small></span>
-                            <span class="habit-time">{{ $habit['time'] ?? '—' }}</span>
+                        <button
+                            class="habit-check {{ $completion ? 'is-complete' : '' }}"
+                            type="button"
+                            aria-pressed="{{ $completion ? 'true' : 'false' }}"
+                            data-habit-check
+                            data-completion-date="{{ $today->toDateString() }}"
+                            data-completion-url="{{ route('habits.completion.update', $habit) }}"
+                        >
+                            <span class="check-mark" aria-hidden="true">{{ $completion ? '✓' : '' }}</span>
+                            <span class="habit-copy"><strong>{{ $habit->name }}</strong><small>{{ $habit->category }}</small></span>
+                            <span class="habit-time">{{ $completion?->completed_at->setTimezone($personalUserTimezone ?? config('app.timezone'))->format('H:i') ?? '—' }}</span>
                         </button>
                     </li>
                 @endforeach
             </ul>
         </div>
 
-        <p class="panel-note">Demo interactions reset when the page reloads.</p>
+        <p class="panel-note" role="status" aria-live="polite" data-save-status>Changes are saved automatically.</p>
     </section>
 
     <section id="map-panel" class="panel map-panel" role="tabpanel" aria-labelledby="tab-map map-heading" data-dashboard-panel="map">
@@ -54,9 +62,9 @@
         </div>
 
         <div class="map-stats" aria-label="Annual statistics">
-            <p><strong>148</strong><span>commitments kept</span></p>
-            <p><strong>8</strong><span>day best streak</span></p>
-            <p><strong>71%</strong><span>completion rate</span></p>
+            <p><strong data-annual-total>{{ $annualTotal }}</strong><span>commitments kept</span></p>
+            <p><strong data-best-streak>{{ $bestStreak }}</strong><span>day best streak</span></p>
+            <p><strong data-completion-rate>{{ $completionRate }}%</strong><span>completion rate</span></p>
         </div>
 
         <div class="heatmap-frame">
@@ -78,34 +86,34 @@
 
         <div class="map-bottom">
             <article class="weekly-card">
-                <div><p class="eyebrow">This week</p><strong>18/28</strong></div>
+                <div><p class="eyebrow">This week</p><strong data-weekly-score>{{ $weeklyCompleted }}/{{ $weeklyExpected }}</strong></div>
                 <div class="week-bars" aria-label="Weekly activity bars">
-                    @foreach ([54, 82, 68, 94, 76, 38, 16] as $index => $height)
-                        <span style="--bar-height: {{ $height }}%"><i></i><small>{{ ['M','T','W','T','F','S','S'][$index] }}</small></span>
+                    @foreach ($weeklyBars as $bar)
+                        <span style="--bar-height: {{ $bar['height'] }}%"><i></i><small>{{ $bar['label'] }}</small></span>
                     @endforeach
                 </div>
             </article>
-            <article class="quote-card"><p>“Consistency is becoming your <em>normal.</em>”</p><span>Your strongest rhythm is still the morning.</span></article>
+            <article class="quote-card"><p>“Consistency is becoming your <em>normal.</em>”</p><span>Every honest check-in makes this record more useful.</span></article>
         </div>
     </section>
 
     <aside id="insights-panel" class="insights-rail" role="tabpanel" aria-labelledby="tab-insights" data-dashboard-panel="insights">
         <section class="panel momentum-card">
             <p class="eyebrow">Momentum</p>
-            <div class="ring" style="--progress: 71" aria-label="71 percent completion rate"><span><strong>71%</strong><small>this month</small></span></div>
-            <p>You are <strong>9%</strong> above last month’s pace.</p>
+            <div class="ring" data-monthly-ring style="--progress: {{ $monthlyRate }}" aria-label="{{ $monthlyRate }} percent completion rate"><span><strong data-monthly-rate>{{ $monthlyRate }}%</strong><small>this month</small></span></div>
+            <p>Your monthly rate updates with every saved commitment.</p>
         </section>
 
         <section class="panel rhythm-card">
-            <div class="panel-header"><div><p class="eyebrow">Strongest rhythm</p><h2>Morning</h2></div><span aria-hidden="true">↗</span></div>
-            <p>Most commitments are completed between 6:00 and 9:00.</p>
+            <div class="panel-header"><div><p class="eyebrow">Strongest rhythm</p><h2 data-rhythm-name>{{ $strongestRhythm['name'] }}</h2></div><span aria-hidden="true">↗</span></div>
+            <p data-rhythm-description>{{ $strongestRhythm['description'] }}</p>
             <div class="rhythm-line" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         </section>
 
         <section class="panel focus-card">
             <p class="eyebrow">Needs attention</p>
-            <strong>Open-source work</strong>
-            <p>2 of the last 7 planned days.</p>
+            <strong data-attention-name>{{ $attention['name'] ?? 'No active habits' }}</strong>
+            <p data-attention-summary>{{ $attention ? "{$attention['completed']} of {$attention['expected']} planned days completed." : 'Add an active habit to begin.' }}</p>
             <button type="button" disabled>View habit <span aria-hidden="true">→</span></button>
         </section>
     </aside>
