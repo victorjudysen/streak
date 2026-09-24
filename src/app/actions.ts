@@ -4,26 +4,49 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth";
-import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken, isCorrectPassword } from "@/lib/session";
+import { changePassword, checkPassword } from "@/lib/credentials";
+import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken } from "@/lib/session";
 import { addTasks, completeTask, removeTask, undoTask } from "@/lib/tasks";
 
-export type FormState = { error?: string };
+export type FormState = { error?: string; success?: string };
 
-export async function signIn(_previous: FormState, formData: FormData): Promise<FormState> {
-  const password = String(formData.get("password") ?? "");
-  if (!isCorrectPassword(password)) {
-    // A short pause makes guessing the password slow.
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    return { error: "That password isn’t right." };
-  }
-  (await cookies()).set(SESSION_COOKIE, createSessionToken(), {
+// A short pause after a wrong password makes guessing slow.
+const slowDown = () => new Promise((resolve) => setTimeout(resolve, 600));
+
+async function startSession(version: number): Promise<void> {
+  (await cookies()).set(SESSION_COOKIE, createSessionToken(version), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     maxAge: SESSION_MAX_AGE,
   });
+}
+
+export async function signIn(_previous: FormState, formData: FormData): Promise<FormState> {
+  const version = await checkPassword(String(formData.get("password") ?? ""));
+  if (version === null) {
+    await slowDown();
+    return { error: "That password isn’t right." };
+  }
+  await startSession(version);
   redirect("/");
+}
+
+export async function changePasswordAction(_previous: FormState, formData: FormData): Promise<FormState> {
+  await requireSession();
+  const result = await changePassword(
+    String(formData.get("current") ?? ""),
+    String(formData.get("next") ?? ""),
+    String(formData.get("confirm") ?? ""),
+  );
+  if (!result.ok) {
+    await slowDown();
+    return { error: result.error };
+  }
+  // Keep this device signed in under the new version; every other device is signed out.
+  await startSession(result.version);
+  return { success: "Password changed. Other devices have been signed out." };
 }
 
 export async function signOut(): Promise<void> {

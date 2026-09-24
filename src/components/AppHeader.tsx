@@ -1,7 +1,18 @@
 import Link from "next/link";
 import { signOut } from "@/app/actions";
 
-export function AppHeader({ signedIn = true }: { signedIn?: boolean }) {
+const LINKS = [
+  { id: "today", href: "/", label: "Today" },
+  { id: "settings", href: "/settings", label: "Settings" },
+] as const;
+
+export function AppHeader({
+  signedIn = true,
+  current = "today",
+}: {
+  signedIn?: boolean;
+  current?: (typeof LINKS)[number]["id"];
+}) {
   return (
     <header className="app-header">
       <a className="skip-link" href="#main-content">
@@ -12,12 +23,24 @@ export function AppHeader({ signedIn = true }: { signedIn?: boolean }) {
       </Link>
       {signedIn ? (
         <nav className="desktop-nav" aria-label="Primary navigation">
-          <Link className="is-active" href="/" aria-current="page">
-            Today
-          </Link>
+          {LINKS.map((link) => (
+            <Link
+              key={link.id}
+              className={link.id === current ? "is-active" : undefined}
+              href={link.href}
+              aria-current={link.id === current ? "page" : undefined}
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
       ) : null}
       <div className="header-actions">
+        {signedIn ? (
+          <Link className="text-button mobile-only" href={current === "settings" ? "/" : "/settings"}>
+            {current === "settings" ? "Today" : "Settings"}
+          </Link>
+        ) : null}
         {signedIn ? (
           <form action={signOut}>
             <button className="text-button" type="submit">
