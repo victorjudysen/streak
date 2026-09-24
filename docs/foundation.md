@@ -33,6 +33,16 @@ there is one source of truth. The rules it enforces live as pure, tested
 functions in `src/lib/task-rules.ts`. New features that change task data must go
 through these files, not query Supabase directly.
 
+## Live updates
+
+Every successful change in `src/lib/tasks.ts` calls `broadcastTasksChanged()`
+(`src/lib/realtime.ts`), which sends a content-free `tasks-changed` signal
+through Supabase Realtime (REST broadcast, secret key). The dashboard's
+`LiveUpdates` component subscribes with the publishable key and calls
+`router.refresh()`. The channel name is an HMAC of `SESSION_SECRET` and is only
+rendered for signed-in pages. New code that changes task data must go through
+`tasks.ts` so the signal is sent.
+
 ## Dashboard contract
 
 - Desktop is a fixed viewport; the document never scrolls. Panels scroll inside.
@@ -46,7 +56,7 @@ through these files, not query Supabase directly.
 Sub-agents may read but must not modify, and should flag needed changes instead:
 
 - `src/app/layout.tsx`, `src/app/globals.css`, `src/components/AppHeader.tsx`
-- `src/lib/tasks.ts`, `src/lib/task-rules.ts`, `src/lib/dates.ts`, `src/lib/session.ts`, `src/lib/credentials.ts`, `src/lib/password.ts`, `src/lib/supabase.ts`
+- `src/lib/tasks.ts`, `src/lib/realtime.ts`, `src/lib/task-rules.ts`, `src/lib/dates.ts`, `src/lib/session.ts`, `src/lib/credentials.ts`, `src/lib/password.ts`, `src/lib/supabase.ts`
 - `supabase/migrations/*` (add new migrations; never edit applied ones)
 - this document
 

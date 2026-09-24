@@ -1,11 +1,13 @@
 import { ActivityMap } from "@/components/ActivityMap";
 import { AppHeader } from "@/components/AppHeader";
 import { DashboardTabs } from "@/components/DashboardTabs";
+import { LiveUpdates } from "@/components/LiveUpdates";
 import { SetupNotice } from "@/components/SetupNotice";
 import { TaskBoard, type TaskView } from "@/components/TaskBoard";
 import { requirePageSession } from "@/lib/auth";
 import { isConfigured, missingEnv } from "@/lib/config";
 import { formatDay, formatTime, localDate } from "@/lib/dates";
+import { TASKS_CHANGED_EVENT, realtimeTopic } from "@/lib/realtime";
 import { buildMap, mapStart, strongestWeekday, summarize, thisWeek } from "@/lib/stats";
 import { isCarriedOver } from "@/lib/task-rules";
 import { completionsByDay, listForToday } from "@/lib/tasks";
@@ -46,6 +48,17 @@ export default async function Dashboard() {
   const weekPeak = Math.max(1, ...week.map(({ count }) => count));
   const rhythm = strongestWeekday(counts);
   const telegramReady = isConfigured("telegram") && Boolean(process.env.TELEGRAM_ALLOWED_CHAT_ID);
+  const topic = realtimeTopic();
+  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const live =
+    topic && publishableKey ? (
+      <LiveUpdates
+        url={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+        publishableKey={publishableKey}
+        topic={topic}
+        event={TASKS_CHANGED_EVENT}
+      />
+    ) : null;
 
   const today = (
     <section className="panel today-panel" aria-labelledby="today-heading">
@@ -60,6 +73,7 @@ export default async function Dashboard() {
             <em>list.</em>
           </h1>
         </div>
+        {live}
       </div>
       <TaskBoard tasks={views} />
     </section>
