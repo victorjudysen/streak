@@ -16,6 +16,9 @@ the rules for building on this code live in [docs/foundation.md](docs/foundation
 Open the Supabase dashboard → **SQL Editor** → **New query**, paste the contents of
 [`supabase/migrations/20260924000000_create_tasks.sql`](supabase/migrations/20260924000000_create_tasks.sql),
 and click **Run**. It creates two tables: `tasks` and `telegram_updates`.
+Then do the same with
+[`20260924140000_create_app_settings.sql`](supabase/migrations/20260924140000_create_app_settings.sql),
+which stores the password once you change it in the app.
 
 ### 2. Fill in `.env.local`
 
@@ -25,7 +28,7 @@ secrets. Add the values marked `TODO`:
 | Variable | Where it comes from |
 | --- | --- |
 | `SUPABASE_SECRET_KEY` | Supabase → Project Settings → API Keys → **Secret keys** (starts `sb_secret_`). Server-only; never share it. |
-| `APP_PASSWORD` | A password you choose for signing in to Streak. |
+| `APP_PASSWORD` | The starting password for signing in. Once you change it under Settings, the app’s own copy is used instead. |
 | `TELEGRAM_BOT_TOKEN` | In Telegram, message **@BotFather**, send `/newbot`, follow the prompts. |
 | `TELEGRAM_ALLOWED_CHAT_ID` | Leave empty for now — see step 5. |
 | `APP_URL` | The public `https://` address once deployed (step 4). |
@@ -68,6 +71,16 @@ This registers `https://<APP_URL>/api/telegram` with Telegram. Then open your bo
 in Telegram and send `/start`. Because `TELEGRAM_ALLOWED_CHAT_ID` is still empty,
 the bot replies with your chat id. Add it as `TELEGRAM_ALLOWED_CHAT_ID` on Netlify
 and in `.env.local`, then redeploy. From then on the bot answers only you.
+
+## Changing your password
+
+Open **Settings** (top of the page) and enter your current password and a new
+one (at least 10 characters). The new password is stored as a scrypt hash in
+Supabase’s `app_settings` table and replaces `APP_PASSWORD` from then on.
+Changing it signs out every other device.
+
+**Forgot it?** In Supabase → Table Editor, delete the single row in
+`app_settings`. The app then falls back to `APP_PASSWORD` again.
 
 ## Using the bot
 

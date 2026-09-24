@@ -90,6 +90,7 @@ code { font: .72rem var(--font-mono); background: var(--moss-100); color: var(--
 .avatar { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--color-border); border-radius: 50%; background: var(--moss-100); color: var(--moss-900); font: 500 .66rem var(--font-mono); }
 .text-button { padding: 4px 2px; border: 0; background: transparent; color: var(--color-muted); font-size: .72rem; text-decoration: underline; text-underline-offset: 3px; }
 .text-button:hover { color: var(--color-text); }
+.mobile-only { display: none; }
 
 /* Dashboard layout: fixed viewport on desktop, panels scroll internally */
 .dashboard-shell {
@@ -136,6 +137,7 @@ h2 { font-size: 1.75rem; }
 .score-track span { display: block; height: 100%; background: var(--color-accent); transition: width 180ms ease; }
 .form-message { margin: 0; min-height: 0; color: var(--color-danger); font-size: .72rem; }
 .form-message:not(:empty) { padding: 8px 0 0; }
+.form-message.is-success { color: var(--color-accent-strong); }
 .task-scroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--moss-300) transparent; }
 .task-list { margin: 0; padding: 0; list-style: none; }
 .task { display: grid; grid-template-columns: minmax(0, 1fr) 28px; align-items: center; border-bottom: 1px solid var(--color-border); }
@@ -228,6 +230,7 @@ h2 { font-size: 1.75rem; }
   :root { --header-height: 58px; --footer-height: 34px; }
   .app-header { grid-template-columns: 1fr auto; padding: 0 14px; }
   .desktop-nav { display: none; }
+  .mobile-only { display: inline; }
   .dashboard-shell { padding: 10px; display: grid; grid-template: auto minmax(0, 1fr) / 1fr; }
   .mobile-tabs { display: grid; grid-template-columns: repeat(3, 1fr); padding: 3px; border: 1px solid var(--color-border); border-radius: 24px; background: var(--color-surface); }
   .mobile-tabs button { min-height: 34px; border: 0; border-radius: 20px; background: transparent; color: var(--color-muted); font-size: .72rem; }

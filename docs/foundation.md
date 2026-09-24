@@ -10,11 +10,16 @@ It replaces the Laravel foundation.
 - **Supabase Postgres** is the only store. All reads and writes happen on the
   server with `SUPABASE_SECRET_KEY` (`src/lib/supabase.ts`). Row Level Security is
   enabled with no policies, so the publishable key alone can do nothing.
-- **Single-user login**: `APP_PASSWORD` plus a signed, httpOnly cookie
+- **Single-user login**: a password plus a signed, httpOnly cookie
   (`src/lib/session.ts`). Pages call `requirePageSession()` (redirects to
   /login) and every server action calls `requireSession()`. There is no
   `proxy.ts`: Netlify's Next.js adapter (5.16.0) fails to build with one, and
-  the per-page and per-action checks already cover every entry point. Real accounts arrive with Phase 3
+  the per-page and per-action checks already cover every entry point.
+- **Password storage** (`src/lib/credentials.ts`): `APP_PASSWORD` until the
+  password is changed on /settings; after that, a scrypt hash in
+  `app_settings` (single row). Each cookie carries the password version it was
+  issued under, so a change signs out every other device. Deleting the row
+  restores `APP_PASSWORD`. Real accounts arrive with Phase 3
   in the product goals; a `user_id` column is added to `tasks` at that point.
 - **Telegram** delivers messages to `POST /api/telegram`. The request must carry
   `TELEGRAM_WEBHOOK_SECRET`, come from `TELEGRAM_ALLOWED_CHAT_ID`, and have an
@@ -41,7 +46,7 @@ through these files, not query Supabase directly.
 Sub-agents may read but must not modify, and should flag needed changes instead:
 
 - `src/app/layout.tsx`, `src/app/globals.css`, `src/components/AppHeader.tsx`
-- `src/lib/tasks.ts`, `src/lib/task-rules.ts`, `src/lib/dates.ts`, `src/lib/session.ts`, `src/lib/supabase.ts`
+- `src/lib/tasks.ts`, `src/lib/task-rules.ts`, `src/lib/dates.ts`, `src/lib/session.ts`, `src/lib/credentials.ts`, `src/lib/password.ts`, `src/lib/supabase.ts`
 - `supabase/migrations/*` (add new migrations; never edit applied ones)
 - this document
 
