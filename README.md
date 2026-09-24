@@ -1,23 +1,89 @@
 # Streak
 
-A private Laravel Blade dashboard for the goals and habits you keep.
+Victor’s private daily list. Add tasks in the web app or by messaging a Telegram
+bot; tick them off from either place. Both write to the same Supabase database,
+and the dashboard shows a year of real activity.
 
-## Local setup
+Built with Next.js 16 (App Router), Supabase (Postgres), and plain CSS.
+
+The long-term direction lives in [docs/product-goals.md](docs/product-goals.md);
+the rules for building on this code live in [docs/foundation.md](docs/foundation.md).
+
+## First-time setup
+
+### 1. Create the database tables
+
+Open the Supabase dashboard → **SQL Editor** → **New query**, paste the contents of
+[`supabase/migrations/20260924000000_create_tasks.sql`](supabase/migrations/20260924000000_create_tasks.sql),
+and click **Run**. It creates two tables: `tasks` and `telegram_updates`.
+
+### 2. Fill in `.env.local`
+
+`.env.local` already has the project URL, publishable key, and two generated
+secrets. Add the values marked `TODO`:
+
+| Variable | Where it comes from |
+| --- | --- |
+| `SUPABASE_SECRET_KEY` | Supabase → Project Settings → API Keys → **Secret keys** (starts `sb_secret_`). Server-only; never share it. |
+| `APP_PASSWORD` | A password you choose for signing in to Streak. |
+| `TELEGRAM_BOT_TOKEN` | In Telegram, message **@BotFather**, send `/newbot`, follow the prompts. |
+| `TELEGRAM_ALLOWED_CHAT_ID` | Leave empty for now — see step 5. |
+| `APP_URL` | The public `https://` address once deployed (step 4). |
+
+`.env.example` documents every variable and is safe to commit; `.env.local` is not.
+
+### 3. Run it locally
 
 ```bash
-composer install
-cp .env.example .env
-php artisan key:generate
 npm install
-npm run build
-php artisan serve
+npm run dev
 ```
 
-The application uses SQLite locally by default. Production will use MySQL on shared hosting, with the domain document root pointed at `public/`.
+Open <http://localhost:3000> and sign in with `APP_PASSWORD`.
 
-## Foundation
+### 4. Deploy
 
-The current reference implementation is a fixed-height desktop dashboard with internally scrollable panels and tabbed mobile sections. See [the foundation contract](docs/foundation.md) before starting feature work.
+Telegram needs a public https address to deliver messages to, so the bot only
+works once the app is deployed. On [Vercel](https://vercel.com): import the GitHub
+repo, add every variable from `.env.local` under **Settings → Environment
+Variables** (set `APP_URL` to the Vercel address), and deploy.
 
-The long-term direction, product principles, and future idea inbox live in the
-[product goals](docs/product-goals.md) document.
+### 5. Connect the Telegram bot
+
+```bash
+npm run telegram:setup
+```
+
+This registers `https://<APP_URL>/api/telegram` with Telegram. Then open your bot
+in Telegram and send `/start`. Because `TELEGRAM_ALLOWED_CHAT_ID` is still empty,
+the bot replies with your chat id. Add it as `TELEGRAM_ALLOWED_CHAT_ID` on Vercel
+and in `.env.local`, then redeploy. From then on the bot answers only you.
+
+## Using the bot
+
+| Message | What happens |
+| --- | --- |
+| `Call the bank` | Adds a task for today. Several lines add several tasks. |
+| `/list` | Today’s numbered list. |
+| `/done 2` | Ticks off task 2. Also `/done 1 3`, `/done 2-4`, `/done all`. |
+| `/undo 2` | Unticks task 2 — only if it was completed today. |
+| `/remove 2` | Deletes a task added today, or lets go of an older unfinished one. |
+
+## How the rules work
+
+- **Today** is decided in `STREAK_TIMEZONE`, not the server’s clock.
+- Unfinished tasks from earlier days **carry over** to today’s list, labelled with their original date.
+- **Closed days stay closed.** A completion recorded on an earlier day cannot be undone or removed, from the app or the bot.
+- Letting go of an old unfinished task hides it from the list but keeps the row, so the record stays honest.
+- The activity map, streak, and weekly numbers are calculated only from real completion times.
+
+## Scripts
+
+```bash
+npm run dev             # local development server
+npm test                # unit tests (rules, dates, stats, bot commands, sessions)
+npm run lint            # ESLint
+npm run typecheck       # TypeScript
+npm run build           # production build
+npm run telegram:setup  # point the Telegram bot at APP_URL
+```
