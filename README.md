@@ -41,12 +41,22 @@ npm run dev
 
 Open <http://localhost:3000> and sign in with `APP_PASSWORD`.
 
-### 4. Deploy
+### 4. Deploy (Netlify)
 
-Telegram needs a public https address to deliver messages to, so the bot only
-works once the app is deployed. On [Vercel](https://vercel.com): import the GitHub
-repo, add every variable from `.env.local` under **Settings → Environment
-Variables** (set `APP_URL` to the Vercel address), and deploy.
+The app is the Netlify site **streak-thisuncle**, served at
+<https://streak.thisuncle.co.tz> (DNS is managed by Netlify). This folder is
+already linked to it (`netlify status`).
+
+Environment variables live under Netlify → Site configuration → Environment
+variables. Secret ones are set for the production, deploy-preview and
+branch-deploy contexts. After changing a variable, redeploy:
+
+```bash
+netlify deploy --build --prod
+```
+
+Telegram needs this public https address to deliver messages, so the bot only
+works once the app is deployed.
 
 ### 5. Connect the Telegram bot
 
@@ -56,7 +66,7 @@ npm run telegram:setup
 
 This registers `https://<APP_URL>/api/telegram` with Telegram. Then open your bot
 in Telegram and send `/start`. Because `TELEGRAM_ALLOWED_CHAT_ID` is still empty,
-the bot replies with your chat id. Add it as `TELEGRAM_ALLOWED_CHAT_ID` on Vercel
+the bot replies with your chat id. Add it as `TELEGRAM_ALLOWED_CHAT_ID` on Netlify
 and in `.env.local`, then redeploy. From then on the bot answers only you.
 
 ## Using the bot

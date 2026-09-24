@@ -6,13 +6,15 @@ It replaces the Laravel foundation.
 ## Architecture
 
 - **Next.js 16 App Router**, TypeScript, plain CSS (no Tailwind). Deployed as a
-  Node app (Vercel by default).
+  Node app on Netlify (`streak-thisuncle`, https://streak.thisuncle.co.tz).
 - **Supabase Postgres** is the only store. All reads and writes happen on the
   server with `SUPABASE_SECRET_KEY` (`src/lib/supabase.ts`). Row Level Security is
   enabled with no policies, so the publishable key alone can do nothing.
 - **Single-user login**: `APP_PASSWORD` plus a signed, httpOnly cookie
-  (`src/lib/session.ts`). `src/proxy.ts` redirects signed-out visitors; every
-  server action calls `requireSession()` again. Real accounts arrive with Phase 3
+  (`src/lib/session.ts`). Pages call `requirePageSession()` (redirects to
+  /login) and every server action calls `requireSession()`. There is no
+  `proxy.ts`: Netlify's Next.js adapter (5.16.0) fails to build with one, and
+  the per-page and per-action checks already cover every entry point. Real accounts arrive with Phase 3
   in the product goals; a `user_id` column is added to `tasks` at that point.
 - **Telegram** delivers messages to `POST /api/telegram`. The request must carry
   `TELEGRAM_WEBHOOK_SECRET`, come from `TELEGRAM_ALLOWED_CHAT_ID`, and have an
