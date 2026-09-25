@@ -1,0 +1,75 @@
+# Checks every pull request and push to main, then deploys:
+#   pull request → preview at https://pr-<number>--streak-thisuncle.netlify.app
+#   merge to main → production at https://streak.thisuncle.co.tz
+# Needs one repository secret, NETLIFY_AUTH_TOKEN (see README → Deploys).
+# The build reads its environment variables from the Netlify site, so no app
+# secrets are stored in GitHub.
+
+name: Check and deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Superseded PR runs are cancelled; production deploys always finish in order.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  NETLIFY_SITE_ID: ced6982a-ceec-4f75-9275-2da3ebbcd9ee
+  NETLIFY_CLI_VERSION: 27.4.2
+
+jobs:
+  check:
+    name: Lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      # After the build, which generates next-env.d.ts.
+      - run: npm run typecheck
+
+  deploy:
+    name: ${{ github.event_name == 'push' && 'Deploy to production' || 'Deploy preview' }}
+    needs: check
+    # Pull requests from forks never get the deploy token.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'push' && 'production' || 'preview' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Deploy to Netlify
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ]; then
+            echo "::error::The NETLIFY_AUTH_TOKEN repository secret is missing. See README → Deploys."
+            exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            args="--prod"
+          else
+            args="--alias pr-$PR_NUMBER"
+          fi
+          npx --yes "netlify-cli@$NETLIFY_CLI_VERSION" deploy --build $args --json > deploy.json
+          url=$(node -p "const d = require('./deploy.json'); process.env.GITHUB_EVENT_NAME === 'push' ? d.url : d.deploy_url")
+          echo "Deployed: $url"
+          echo "### Deployed to $url" >> "$GITHUB_STEP_SUMMARY"

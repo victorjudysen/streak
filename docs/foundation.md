@@ -60,6 +60,14 @@ Sub-agents may read but must not modify, and should flag needed changes instead:
 - `supabase/migrations/*` (add new migrations; never edit applied ones)
 - this document
 
+## Deploys
+
+`.github/workflows/deploy.yml` is the deploy path: checks on every PR and push to
+`main`, preview deploys (`pr-<n>` alias) for PRs, production on merge. It uses the
+`NETLIFY_AUTH_TOKEN` repo secret; app environment variables come from the Netlify
+site. Don't pass `--context deploy-preview` to `netlify deploy` — the Next.js
+plugin then fails with a 403 fetching site extensions.
+
 ## Database changes
 
 Add a new timestamped file in `supabase/migrations/` and run it in the Supabase

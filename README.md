@@ -47,16 +47,14 @@ Open <http://localhost:3000> and sign in with `APP_PASSWORD`.
 ### 4. Deploy (Netlify)
 
 The app is the Netlify site **streak-thisuncle**, served at
-<https://streak.thisuncle.co.tz> (DNS is managed by Netlify). This folder is
-already linked to it (`netlify status`).
+<https://streak.thisuncle.co.tz> (DNS is managed by Netlify).
 
-Environment variables live under Netlify → Site configuration → Environment
-variables. Secret ones are set for the production, deploy-preview and
-branch-deploy contexts. After changing a variable, redeploy:
-
-```bash
-netlify deploy --build --prod
-```
+Deploys are automatic through GitHub Actions (see [Deploys](#deploys)). The
+app's environment variables live on Netlify → Site configuration →
+Environment variables; secret ones are set for the production,
+deploy-preview and branch-deploy contexts. After changing a variable, re-run
+the latest "Check and deploy" run on `main` (or run `netlify deploy --build --prod`
+from this folder).
 
 Telegram needs this public https address to deliver messages, so the bot only
 works once the app is deployed.
@@ -71,6 +69,30 @@ This registers `https://<APP_URL>/api/telegram` with Telegram. Then open your bo
 in Telegram and send `/start`. Because `TELEGRAM_ALLOWED_CHAT_ID` is still empty,
 the bot replies with your chat id. Add it as `TELEGRAM_ALLOWED_CHAT_ID` on Netlify
 and in `.env.local`, then redeploy. From then on the bot answers only you.
+
+## Deploys
+
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs lint, tests,
+a build and a type check on every pull request and every push to `main`, then:
+
+| Event | Deploys to |
+| --- | --- |
+| Pull request | Preview: `https://pr-<number>--streak-thisuncle.netlify.app` (shown in the run summary) |
+| Merge to `main` | Production: <https://streak.thisuncle.co.tz> |
+
+Previews use the same environment variables as production, **including the real
+database**, so tasks you change on a preview change your real list.
+
+The workflow needs one GitHub secret, `NETLIFY_AUTH_TOKEN`:
+
+1. Netlify → avatar → **User settings** → **Applications** → **Personal access tokens** → **New access token**. Name it `streak-github-actions` and pick an expiry.
+2. Add it to the repo (the command prompts for the value, so it isn't saved in your shell history):
+   ```bash
+   gh secret set NETLIFY_AUTH_TOKEN
+   ```
+   or GitHub → repo → Settings → Secrets and variables → Actions → New repository secret.
+
+When the token expires, create a new one and run the same command again.
 
 ## Changing your password
 
