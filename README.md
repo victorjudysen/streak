@@ -99,6 +99,8 @@ Changing it signs out every other device.
 - **Closed days stay closed.** A completion recorded on an earlier day cannot be undone or removed, from the app or the bot.
 - Letting go of an old unfinished task hides it from the list but keeps the row, so the record stays honest.
 - The activity map, streak, and weekly numbers are calculated only from real completion times.
+- The dashboard updates **live**: a task added or ticked off in Telegram (or on another device) appears within a second, without refreshing. The “Live” badge on the Today panel shows the connection; if it drops, the page catches up when you return to the tab.
+- Editing a Telegram message you already sent does nothing. Send a new message instead.
 
 ## Scripts
 

@@ -155,6 +155,12 @@ h2 { font-size: 1.75rem; }
 .task-remove { width: 28px; height: 28px; border: 0; border-radius: 50%; background: transparent; color: var(--color-muted); font-size: 1.1rem; line-height: 1; opacity: .4; }
 .task:hover .task-remove, .task-remove:focus-visible { opacity: 1; }
 .task-remove:hover { background: var(--canvas); color: var(--color-danger); }
+.live-status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--color-border); border-radius: 20px; color: var(--color-muted); font: .58rem var(--font-mono); white-space: nowrap; }
+.live-status i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+.live-status.is-live { border-color: var(--moss-300); background: var(--moss-100); color: var(--moss-900); }
+.live-status.is-live i { background: var(--moss-700); animation: live-pulse 2s ease-in-out infinite; }
+.live-status.is-offline i { background: var(--clay); }
+@keyframes live-pulse { 50% { opacity: .35; } }
 .empty-state { margin: 18px 0 0; color: var(--color-muted); font-size: .78rem; }
 
 /* Record */
@@ -263,4 +269,5 @@ h2 { font-size: 1.75rem; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+  .live-status.is-live i { animation: none; }
 }

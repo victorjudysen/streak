@@ -1,6 +1,7 @@
 import "server-only";
 
 import { addDays, localDate, timeZone, today } from "@/lib/dates";
+import { broadcastTasksChanged } from "@/lib/realtime";
 import { db } from "@/lib/supabase";
 import {
   decideComplete,
@@ -14,7 +15,8 @@ import {
 } from "@/lib/task-rules";
 
 // The single data layer for tasks. Both the web app and the Telegram bot call these
-// functions, so there is exactly one source of truth and one set of rules.
+// functions, so there is exactly one source of truth and one set of rules. Every
+// successful change broadcasts a signal so open dashboards update live.
 
 export type Result<T = Task> = { ok: true; task: T } | { ok: false; error: string };
 
@@ -54,6 +56,7 @@ export async function addTasks(rawTitles: string[], source: TaskSource): Promise
     .select(COLUMNS);
 
   if (error) return { ok: false, error: `Could not save: ${error.message}` };
+  await broadcastTasksChanged();
   return { ok: true, task: sortTasks(data as Task[]) };
 }
 
@@ -71,6 +74,7 @@ async function patch(id: string, values: Partial<Task>): Promise<Result> {
     .select(COLUMNS)
     .single<Task>();
   if (error) return { ok: false, error: `Could not save: ${error.message}` };
+  await broadcastTasksChanged();
   return { ok: true, task: data };
 }
 
@@ -103,6 +107,7 @@ export async function removeTask(id: string): Promise<Result<Task & { removal: "
 
   const { error } = await db().from("tasks").delete().eq("id", id);
   if (error) return { ok: false, error: `Could not remove: ${error.message}` };
+  await broadcastTasksChanged();
   return { ok: true, task: { ...task, removal: "delete" } };
 }
 
