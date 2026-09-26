@@ -14,6 +14,7 @@ function task(overrides: Partial<Task> = {}): Task {
     dropped_at: null,
     source: "app",
     created_at: "2026-09-26T06:00:00Z",
+    routine_id: null,
     ...overrides,
   };
 }
@@ -27,6 +28,14 @@ describe("formatList", () => {
     expect(text).toContain("Sat 26 Sept — 1/2 done");
     expect(text).toContain("1. ⬜ Renew passport (from Thu 24 Sept)");
     expect(text).toContain("2. ✅ Gym");
+  });
+});
+
+describe("routine tasks", () => {
+  it("marks routine tasks with 🔁", () => {
+    expect(formatList(TODAY, [task({ title: "Morning prayers", routine_id: "r1" })])).toContain(
+      "1. ⬜ Morning prayers 🔁",
+    );
   });
 });
 

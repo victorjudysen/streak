@@ -13,6 +13,8 @@ export interface TaskView {
   /** "Tue 22 Sep" when carried over from an earlier day. */
   carriedFrom: string | null;
   fromTelegram: boolean;
+  /** Created from a routine (recurring task). */
+  isRoutine: boolean;
 }
 
 type Change = { id: string; type: "toggle"; done: boolean } | { id: string; type: "remove" };
@@ -111,6 +113,7 @@ export function TaskBoard({ tasks }: { tasks: TaskView[] }) {
                     <strong>{task.title}</strong>
                     <small>
                       {task.carriedFrom ? <span className="carried">From {task.carriedFrom}</span> : null}
+                      {task.isRoutine ? <span className="routine-tag">↻ Routine</span> : null}
                       {task.fromTelegram ? <span>via Telegram</span> : null}
                     </small>
                   </span>
@@ -119,8 +122,14 @@ export function TaskBoard({ tasks }: { tasks: TaskView[] }) {
                 <button
                   type="button"
                   className="task-remove"
-                  aria-label={task.carriedFrom ? `Let go of “${task.title}”` : `Remove “${task.title}”`}
-                  title={task.carriedFrom ? "Let go (kept on record)" : "Remove"}
+                  aria-label={
+                    task.carriedFrom
+                      ? `Let go of “${task.title}”`
+                      : task.isRoutine
+                        ? `Skip “${task.title}” today`
+                        : `Remove “${task.title}”`
+                  }
+                  title={task.carriedFrom ? "Let go (kept on record)" : task.isRoutine ? "Skip today" : "Remove"}
                   onClick={() => run({ id: task.id, type: "remove" }, () => removeTaskAction(task.id))}
                 >
                   ×

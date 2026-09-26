@@ -222,6 +222,30 @@ h2 { font-size: 1.75rem; }
 .primary-button { min-height: 42px; margin-top: 4px; border: 0; border-radius: 2px; background: var(--ink-950); color: var(--white); font-weight: 600; font-size: .82rem; }
 .primary-button:hover:not(:disabled) { background: var(--color-accent-strong); }
 
+/* Routines */
+.routines-panel { width: min(100%, 560px); max-height: 100%; padding: 28px; overflow-y: auto; }
+.routines-panel h1 { margin-bottom: 14px; }
+.routines-intro { color: var(--color-muted); font-size: .8rem; }
+.routine-form .add-form { margin-top: 4px; }
+.weekday-picker { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; padding: 0; border: 0; }
+.weekday-picker legend { width: 100%; margin-bottom: 6px; color: var(--color-muted); font: 500 .6rem var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.weekday-picker label { position: relative; }
+.weekday-picker input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.weekday-picker span { display: grid; place-items: center; min-width: 42px; min-height: 32px; padding: 0 8px; border: 1px solid var(--color-border); border-radius: 2px; color: var(--color-muted); font: .7rem var(--font-mono); }
+.weekday-picker input:checked + span { border-color: var(--ink-950); background: var(--ink-950); color: var(--white); }
+.weekday-picker input:focus-visible + span { box-shadow: var(--focus-ring); }
+.routine-list { margin: 18px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--color-border); }
+.routine { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "copy streak" "actions actions"; gap: 4px 12px; padding: 12px 2px; border-bottom: 1px solid var(--color-border); }
+.routine-copy { grid-area: copy; min-width: 0; }
+.routine-copy strong { display: block; overflow-wrap: anywhere; font-size: .86rem; font-weight: 500; }
+.routine-copy small { color: var(--color-muted); font-size: .66rem; }
+.routine.is-paused .routine-copy strong { color: var(--color-muted); }
+.routine-streak { grid-area: streak; display: flex; align-items: baseline; gap: 4px; }
+.routine-streak strong { font: 500 1.5rem var(--font-display); }
+.routine-streak small { color: var(--color-muted); font-size: .62rem; }
+.routine-actions { grid-area: actions; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.task-copy .routine-tag { color: var(--moss-700); }
+
 /* Footer */
 .app-footer { padding: 0 18px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--color-border); color: var(--color-muted); font-size: .58rem; }
 .app-footer a { color: var(--color-accent); text-decoration: underline; text-underline-offset: 2px; transition: opacity 150ms ease; }

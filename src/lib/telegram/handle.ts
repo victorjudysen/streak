@@ -77,7 +77,9 @@ export async function handleMessage(text: string): Promise<string> {
             ? await applyByNumber(targets, before.tasks, undoTask, (task) => `Undone: ${task.title}`)
             : await applyByNumber(targets, before.tasks, removeTask, (task) =>
                 "removal" in task && task.removal === "drop"
-                  ? `Let go (kept on record): ${task.title}`
+                  ? task.routine_id && task.task_date === before.day
+                    ? `Skipped for today: ${task.title}`
+                    : `Let go (kept on record): ${task.title}`
                   : `Removed: ${task.title}`,
               );
 

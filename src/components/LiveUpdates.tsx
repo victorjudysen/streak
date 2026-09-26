@@ -1,10 +1,27 @@
 "use client";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type Status = "connecting" | "live" | "offline";
+
+// One client per page load: creating a new one on every mount (e.g. navigating
+// back to the dashboard) makes supabase-js warn about duplicate auth clients.
+let sharedClient: { key: string; client: SupabaseClient } | undefined;
+
+function realtimeClient(url: string, publishableKey: string): SupabaseClient {
+  const key = `${url}|${publishableKey}`;
+  if (sharedClient?.key !== key) {
+    sharedClient = {
+      key,
+      client: createClient(url, publishableKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      }),
+    };
+  }
+  return sharedClient.client;
+}
 
 const LABELS: Record<Status, string> = {
   connecting: "Connecting",
@@ -33,9 +50,7 @@ export function LiveUpdates({
   const [status, setStatus] = useState<Status>("connecting");
 
   useEffect(() => {
-    const client = createClient(url, publishableKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const client = realtimeClient(url, publishableKey);
     let timer: ReturnType<typeof setTimeout> | undefined;
     // Several changes in quick succession (e.g. /done 1 2 3) cause one reload.
     const refresh = () => {

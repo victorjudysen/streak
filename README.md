@@ -19,6 +19,8 @@ and click **Run**. It creates two tables: `tasks` and `telegram_updates`.
 Then do the same with
 [`20260924140000_create_app_settings.sql`](supabase/migrations/20260924140000_create_app_settings.sql),
 which stores the password once you change it in the app.
+Then [`20260926120000_create_routines.sql`](supabase/migrations/20260926120000_create_routines.sql),
+which adds recurring tasks.
 
 ### 2. Fill in `.env.local`
 
@@ -113,6 +115,25 @@ Changing it signs out every other device.
 | `/done 2` | Ticks off task 2. Also `/done 1 3`, `/done 2-4`, `/done all`. |
 | `/undo 2` | Unticks task 2 — only if it was completed today. |
 | `/remove 2` | Deletes a task added today, or lets go of an older unfinished one. |
+
+## Routines (recurring tasks)
+
+Open **Routines** to add something you do regularly, like “Morning prayers”
+every day or “Gym” on Mon/Wed/Fri. On those days it appears on the list by
+itself, marked **↻ Routine** in the app and 🔁 in Telegram, and you tick it off
+the same way as any task.
+
+- Today’s routine tasks are created the first time anything loads the list —
+  the dashboard, the bot, or the 9am message — so they are always in the
+  morning message.
+- **Unfinished routines carry over** like other tasks, so a missed day shows up
+  again next to that day’s copy (“From Fri 25 Sept”).
+- Removing today’s routine task **skips it for today**; the routine carries on
+  tomorrow.
+- **Pause** stops a routine appearing until you resume it. **Remove** stops it
+  for good but keeps its history.
+- Each routine shows its streak: the scheduled days in a row it was completed.
+  Days it isn’t scheduled for don’t break it.
 
 ## Morning message
 

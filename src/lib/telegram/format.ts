@@ -13,7 +13,8 @@ export function formatList(day: string, tasks: Task[]): string {
   const lines = tasks.map((task, index) => {
     const mark = task.done_at ? "✅" : "⬜";
     const from = isCarriedOver(task, day) ? ` (from ${formatDay(task.task_date, SHORT_DAY)})` : "";
-    return `${index + 1}. ${mark} ${task.title}${from}`;
+    const routine = task.routine_id ? " 🔁" : "";
+    return `${index + 1}. ${mark} ${task.title}${routine}${from}`;
   });
   return [`${heading} — ${done}/${tasks.length} done`, "", ...lines].join("\n");
 }

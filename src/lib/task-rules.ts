@@ -18,6 +18,8 @@ export interface Task {
   dropped_at: string | null;
   source: TaskSource;
   created_at: string;
+  /** The routine this task was created from; null for one-off tasks. */
+  routine_id: string | null;
 }
 
 export const MAX_TITLE_LENGTH = 280;
@@ -77,9 +79,14 @@ export function decideUndo(task: Task, day: string, zone?: string): Decision<"un
 /**
  * Today's tasks are deleted outright (a typo or change of plan). An unfinished task
  * from an earlier day is "let go" instead — hidden from the list but kept on record.
+ * Today's routine task is also let go rather than deleted, so it is skipped for the
+ * day instead of being recreated the next time the list loads.
  */
 export function decideRemove(task: Task, day: string, zone?: string): Decision<"delete" | "drop"> {
   if (task.dropped_at) return { error: "That task was already let go." };
+  if (task.task_date === day && task.routine_id) {
+    return task.done_at ? { error: "Undo it first, then skip it." } : { action: "drop" };
+  }
   if (task.task_date === day) return { action: "delete" };
   if (task.task_date > day) return { error: "That task is planned for a later day." };
   if (task.done_at) {

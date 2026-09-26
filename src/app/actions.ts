@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth";
 import { changePassword, checkPassword } from "@/lib/credentials";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken } from "@/lib/session";
+import { parseWeekdays } from "@/lib/routine-rules";
+import { createRoutine, removeRoutine, setRoutinePaused } from "@/lib/routines";
 import { addTasks, completeTask, removeTask, undoTask } from "@/lib/tasks";
 
 export type FormState = { error?: string; success?: string };
@@ -73,5 +75,30 @@ export async function removeTaskAction(id: string): Promise<FormState> {
   await requireSession();
   const result = await removeTask(id);
   revalidatePath("/");
+  return result.ok ? {} : { error: result.error };
+}
+
+export async function createRoutineAction(_previous: FormState, formData: FormData): Promise<FormState> {
+  await requireSession();
+  const weekdays = parseWeekdays(formData.getAll("weekdays"));
+  if ("error" in weekdays) return { error: weekdays.error };
+  const result = await createRoutine(String(formData.get("title") ?? ""), weekdays);
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/routines");
+  revalidatePath("/");
+  return { success: `Added “${result.routine.title}”.` };
+}
+
+export async function setRoutinePausedAction(id: string, paused: boolean): Promise<FormState> {
+  await requireSession();
+  const result = await setRoutinePaused(id, paused);
+  revalidatePath("/routines");
+  return result.ok ? {} : { error: result.error };
+}
+
+export async function removeRoutineAction(id: string): Promise<FormState> {
+  await requireSession();
+  const result = await removeRoutine(id);
+  revalidatePath("/routines");
   return result.ok ? {} : { error: result.error };
 }

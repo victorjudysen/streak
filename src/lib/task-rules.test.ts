@@ -15,6 +15,7 @@ function task(overrides: Partial<Task> = {}): Task {
     dropped_at: null,
     source: "app",
     created_at: "2026-09-24T06:00:00Z",
+    routine_id: null,
     ...overrides,
   };
 }
@@ -71,6 +72,13 @@ describe("closed days stay closed", () => {
   it("deletes today's tasks but only lets go of older unfinished ones", () => {
     expect(decideRemove(task(), TODAY, ZONE)).toEqual({ action: "delete" });
     expect(decideRemove(task({ task_date: "2026-09-21" }), TODAY, ZONE)).toEqual({ action: "drop" });
+  });
+  it("skips today's routine task instead of deleting it, so it isn't recreated", () => {
+    expect(decideRemove(task({ routine_id: "r1" }), TODAY, ZONE)).toEqual({ action: "drop" });
+    expect(decideRemove(task({ routine_id: "r1", done_at: "2026-09-24T09:00:00Z" }), TODAY, ZONE)).toHaveProperty("error");
+  });
+  it("lets go of an unfinished routine task carried over from an earlier day", () => {
+    expect(decideRemove(task({ routine_id: "r1", task_date: "2026-09-22" }), TODAY, ZONE)).toEqual({ action: "drop" });
   });
   it("never removes a completion recorded on a closed day", () => {
     expect(decideRemove(task({ task_date: "2026-09-21", done_at: "2026-09-22T09:00:00Z" }), TODAY, ZONE)).toHaveProperty("error");

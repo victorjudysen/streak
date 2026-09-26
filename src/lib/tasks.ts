@@ -3,6 +3,7 @@ import "server-only";
 import { addDays, localDate, timeZone, today } from "@/lib/dates";
 import { broadcastTasksChanged } from "@/lib/realtime";
 import { db } from "@/lib/supabase";
+import { isActive, isScheduledOn, type Routine } from "@/lib/routine-rules";
 import {
   decideComplete,
   decideRemove,
@@ -20,11 +21,41 @@ import {
 
 export type Result<T = Task> = { ok: true; task: T } | { ok: false; error: string };
 
-const COLUMNS = "id, seq, title, task_date, done_at, dropped_at, source, created_at";
+const COLUMNS = "id, seq, title, task_date, done_at, dropped_at, source, created_at, routine_id";
+
+/**
+ * Creates today's task for every active routine scheduled today, unless it already
+ * exists. Safe to call repeatedly: the (routine_id, task_date) constraint ignores
+ * duplicates. Runs whenever the list loads, which includes the 9am digest.
+ */
+async function ensureRoutineTasks(day: string): Promise<void> {
+  const { data, error } = await db()
+    .from("routines")
+    .select("id, title, weekdays, paused_at, archived_at")
+    .is("archived_at", null)
+    .is("paused_at", null);
+  // Table not created yet (migration pending): no routines.
+  if (error?.code === "PGRST205" || error?.code === "42P01") return;
+  if (error) throw new Error(`Could not load routines: ${error.message}`);
+
+  const due = (data as Routine[]).filter((routine) => isActive(routine) && isScheduledOn(routine, day));
+  if (due.length === 0) return;
+
+  const { data: created, error: insertError } = await db()
+    .from("tasks")
+    .upsert(
+      due.map((routine) => ({ title: routine.title, task_date: day, source: "app", routine_id: routine.id })),
+      { onConflict: "routine_id,task_date", ignoreDuplicates: true },
+    )
+    .select("id");
+  if (insertError) throw new Error(`Could not create routine tasks: ${insertError.message}`);
+  if (created && created.length > 0) await broadcastTasksChanged();
+}
 
 /** Today's list: today's tasks plus anything unfinished from earlier days. */
 export async function listForToday(): Promise<{ day: string; tasks: Task[] }> {
   const day = today();
+  await ensureRoutineTasks(day);
   // Anything completed today finished within the last ~36 hours, whatever the zone.
   const recent = new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString();
 
