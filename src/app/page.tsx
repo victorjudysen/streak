@@ -39,6 +39,7 @@ export default async function Dashboard() {
       ? formatDay(task.task_date, { weekday: "short", day: "numeric", month: "short" })
       : null,
     fromTelegram: task.source === "telegram",
+    isRoutine: task.routine_id !== null,
   }));
 
   const map = buildMap(day, counts);

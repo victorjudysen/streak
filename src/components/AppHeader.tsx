@@ -3,6 +3,7 @@ import { signOut } from "@/app/actions";
 
 const LINKS = [
   { id: "today", href: "/", label: "Today" },
+  { id: "routines", href: "/routines", label: "Routines" },
   { id: "settings", href: "/settings", label: "Settings" },
 ] as const;
 
@@ -36,11 +37,13 @@ export function AppHeader({
         </nav>
       ) : null}
       <div className="header-actions">
-        {signedIn ? (
-          <Link className="text-button mobile-only" href={current === "settings" ? "/" : "/settings"}>
-            {current === "settings" ? "Today" : "Settings"}
-          </Link>
-        ) : null}
+        {signedIn
+          ? LINKS.filter((link) => link.id !== current).map((link) => (
+              <Link key={link.id} className="text-button mobile-only" href={link.href}>
+                {link.label}
+              </Link>
+            ))
+          : null}
         {signedIn ? (
           <form action={signOut}>
             <button className="text-button" type="submit">

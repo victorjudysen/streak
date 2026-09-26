@@ -33,6 +33,17 @@ there is one source of truth. The rules it enforces live as pure, tested
 functions in `src/lib/task-rules.ts`. New features that change task data must go
 through these files, not query Supabase directly.
 
+## Routines
+
+`routines` holds recurring tasks (title, ISO `weekdays`, `paused_at`,
+`archived_at`). `listForToday()` first calls `ensureRoutineTasks()`, which upserts
+today's task for each active routine scheduled today; the
+`tasks_routine_day_key` unique constraint on `(routine_id, task_date)` makes
+that idempotent. Pure rules (schedules, streaks) live in
+`src/lib/routine-rules.ts`; management in `src/lib/routines.ts`. Removing
+today's routine task drops it (`dropped_at`) rather than deleting it, so it is
+not recreated the same day.
+
 ## Live updates
 
 Every successful change in `src/lib/tasks.ts` calls `broadcastTasksChanged()`
@@ -56,7 +67,7 @@ rendered for signed-in pages. New code that changes task data must go through
 Sub-agents may read but must not modify, and should flag needed changes instead:
 
 - `src/app/layout.tsx`, `src/app/globals.css`, `src/components/AppHeader.tsx`
-- `src/lib/tasks.ts`, `src/lib/realtime.ts`, `src/lib/task-rules.ts`, `src/lib/dates.ts`, `src/lib/session.ts`, `src/lib/credentials.ts`, `src/lib/password.ts`, `src/lib/supabase.ts`
+- `src/lib/tasks.ts`, `src/lib/routines.ts`, `src/lib/routine-rules.ts`, `src/lib/realtime.ts`, `src/lib/task-rules.ts`, `src/lib/dates.ts`, `src/lib/session.ts`, `src/lib/credentials.ts`, `src/lib/password.ts`, `src/lib/supabase.ts`
 - `supabase/migrations/*` (add new migrations; never edit applied ones)
 - this document
 
