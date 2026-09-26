@@ -1,9 +1,9 @@
 import "server-only";
 
-import { formatDay } from "@/lib/dates";
-import { isCarriedOver, type Task } from "@/lib/task-rules";
+import type { Task } from "@/lib/task-rules";
 import { addTasks, completeTask, listForToday, removeTask, undoTask } from "@/lib/tasks";
 import { parseCommand } from "@/lib/telegram/commands";
+import { formatList } from "@/lib/telegram/format";
 
 export const HELP_TEXT = [
   "Streak bot — your daily list.",
@@ -16,21 +16,6 @@ export const HELP_TEXT = [
   "/remove 2 — remove a task",
   "/help — show this message",
 ].join("\n");
-
-export function formatList(day: string, tasks: Task[]): string {
-  const heading = formatDay(day, { weekday: "short", day: "numeric", month: "short" });
-  if (tasks.length === 0) return `${heading} — nothing on the list yet.`;
-
-  const done = tasks.filter((task) => task.done_at).length;
-  const lines = tasks.map((task, index) => {
-    const mark = task.done_at ? "✅" : "⬜";
-    const from = isCarriedOver(task, day)
-      ? ` (from ${formatDay(task.task_date, { weekday: "short", day: "numeric", month: "short" })})`
-      : "";
-    return `${index + 1}. ${mark} ${task.title}${from}`;
-  });
-  return [`${heading} — ${done}/${tasks.length} done`, "", ...lines].join("\n");
-}
 
 type Change = (id: string) => Promise<{ ok: true; task: Task } | { ok: false; error: string }>;
 
