@@ -68,6 +68,14 @@ Sub-agents may read but must not modify, and should flag needed changes instead:
 site. Don't pass `--context deploy-preview` to `netlify deploy` — the Next.js
 plugin then fails with a 403 fetching site extensions.
 
+## Scheduled jobs
+
+Netlify scheduled functions live in `netlify/functions/` and only call app
+endpoints under `/api/cron/*`, authenticated with `CRON_SECRET`, so all logic
+stays in the Next.js app and its shared libraries. Schedules are cron strings in
+UTC. Existing: `daily-digest` at 06:00 UTC (09:00 EAT) sends today's list to
+Telegram.
+
 ## Database changes
 
 Add a new timestamped file in `supabase/migrations/` and run it in the Supabase

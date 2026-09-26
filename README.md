@@ -114,6 +114,22 @@ Changing it signs out every other device.
 | `/undo 2` | Unticks task 2 — only if it was completed today. |
 | `/remove 2` | Deletes a task added today, or lets go of an older unfinished one. |
 
+## Morning message
+
+Every day at **09:00 East Africa Time** the bot sends today’s list to your
+Telegram chat, including anything carried over, numbered so you can reply
+`/done 2` straight away. An empty list gets a short nudge instead.
+
+- The schedule lives in [`netlify/functions/daily-digest.mts`](netlify/functions/daily-digest.mts)
+  (`0 6 * * *` = 06:00 UTC = 09:00 EAT). It is a fixed UTC time: changing
+  `STREAK_TIMEZONE` does not move it.
+- It runs only on the live production site, never on previews.
+- It calls `POST /api/cron/daily-digest`, which requires the `CRON_SECRET`
+  environment variable. To send one now, e.g. to test:
+  ```bash
+  curl -X POST https://streak.thisuncle.co.tz/api/cron/daily-digest -H "authorization: Bearer $CRON_SECRET"
+  ```
+
 ## How the rules work
 
 - **Today** is decided in `STREAK_TIMEZONE`, not the server’s clock.
