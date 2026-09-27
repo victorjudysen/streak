@@ -54,6 +54,16 @@ through Supabase Realtime (REST broadcast, secret key). The dashboard's
 rendered for signed-in pages. New code that changes task data must go through
 `tasks.ts` so the signal is sent.
 
+## Activity graph
+
+`buildCalendar()` (`src/lib/stats.ts`) produces a GitHub-style calendar for a
+range: `lastYearRange()` (53 Sunday-first week columns ending today) or
+`yearRange(year)`. Levels come from quartiles of the range's active days.
+`ActivityMap` renders it with fixed 10px cells, GitHub's colour tokens
+(`--map-*`), a tooltip and a Less → More legend. Queries that can return more
+than 1,000 rows must use `fetchAll()` (`src/lib/paging.ts`), because Supabase
+caps each request at 1,000 rows.
+
 ## Dashboard contract
 
 - Desktop is a fixed viewport; the document never scrolls. Panels scroll inside.

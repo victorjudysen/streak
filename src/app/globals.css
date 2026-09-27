@@ -39,11 +39,14 @@
   --header-height: 64px;
   --footer-height: 28px;
   --panel-radius: 4px;
-  --map-empty: #e4e5de;
-  --map-1: var(--moss-100);
-  --map-2: var(--moss-300);
-  --map-3: var(--moss-500);
-  --map-4: var(--moss-700);
+  /* GitHub's light-theme contribution colours, used by the activity graph. */
+  --map-empty: #ebedf0;
+  --map-1: #9be9a8;
+  --map-2: #40c463;
+  --map-3: #30a14e;
+  --map-4: #216e39;
+  --graph-cell: 10px;
+  --graph-gap: 3px;
 }
 
 * { box-sizing: border-box; }
@@ -97,7 +100,7 @@ code { font: .72rem var(--font-mono); background: var(--moss-100); color: var(--
   min-height: 0;
   padding: 12px 16px;
   display: grid;
-  grid-template-columns: minmax(290px, 360px) minmax(500px, 1fr) minmax(220px, 270px);
+  grid-template-columns: minmax(280px, 330px) minmax(500px, 1fr) minmax(220px, 270px);
   gap: 12px;
   overflow: hidden;
 }
@@ -164,26 +167,68 @@ h2 { font-size: 1.75rem; }
 .empty-state { margin: 18px 0 0; color: var(--color-muted); font-size: .78rem; }
 
 /* Record */
-.map-panel { padding: 18px 20px; display: grid; grid-template-rows: auto auto minmax(170px, 1fr) minmax(100px, .48fr); gap: 13px; overflow: hidden; }
-.map-stats { margin: 0; display: flex; align-items: baseline; gap: clamp(24px, 5vw, 68px); border-bottom: 1px solid var(--color-border); padding-bottom: 11px; }
+.map-panel { padding: 18px 20px; display: grid; grid-template-rows: auto auto auto auto minmax(100px, 1fr); gap: 12px; overflow: hidden; }
+.map-stats { margin: 0; display: flex; align-items: baseline; gap: clamp(24px, 5vw, 68px); border-top: 1px solid var(--color-border); padding-top: 11px; }
 .map-stats div { display: flex; flex-direction: row-reverse; align-items: baseline; gap: 7px; }
 .map-stats dd { margin: 0; font: 500 1.25rem var(--font-display); }
 .map-stats dt { color: var(--color-muted); font-size: .62rem; }
-.heatmap-frame { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
-.month-labels { margin-left: 33px; padding-bottom: 5px; display: grid; color: var(--color-muted); font: .56rem var(--font-mono); white-space: nowrap; }
-.heatmap-body { min-height: 0; display: grid; grid-template-columns: 27px minmax(0, 1fr); gap: 6px; align-items: stretch; }
-.weekday-labels { display: grid; grid-template-rows: repeat(7, minmax(8px, 1fr)); gap: 3px; color: var(--color-muted); font: .52rem/1 var(--font-mono); }
-.weekday-labels span { display: flex; align-items: center; }
-.heatmap { min-width: 0; min-height: 0; display: grid; grid-template-columns: repeat(53, minmax(7px, 1fr)); grid-template-rows: repeat(7, minmax(7px, 1fr)); grid-auto-flow: column; gap: 3px; }
-.day-cell { min-width: 0; min-height: 0; max-height: 15px; border: 1px solid rgb(20 35 31 / 4%); border-radius: 2px; background: var(--map-empty); }
-.day-cell[data-level="1"], .map-legend i[data-level="1"] { background: var(--map-1); }
-.day-cell[data-level="2"], .map-legend i[data-level="2"] { background: var(--map-2); }
-.day-cell[data-level="3"], .map-legend i[data-level="3"] { background: var(--map-3); }
-.day-cell[data-level="4"], .map-legend i[data-level="4"] { background: var(--map-4); }
-.day-cell.is-future { opacity: .35; }
-.day-cell.is-today { outline: 2px solid var(--clay); outline-offset: 1px; }
-.map-legend { justify-self: end; display: flex; align-items: center; gap: 4px; padding-top: 7px; color: var(--color-muted); font: .55rem var(--font-mono); }
-.map-legend i { width: 9px; height: 9px; background: var(--map-empty); }
+
+/* GitHub-style contribution graph */
+.graph-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.graph-heading h3 { margin: 0; font-size: .85rem; font-weight: 500; }
+.graph-years { display: flex; flex-wrap: wrap; gap: 4px; }
+.graph-years a { padding: 3px 10px; border-radius: 6px; color: var(--color-muted); font-size: .72rem; text-decoration: none; }
+.graph-years a:hover { background: var(--canvas); color: var(--color-text); }
+.graph-years a[aria-current="page"] { background: #0969da; color: var(--white); }
+.graph { position: relative; min-width: 0; padding: 10px 8px 8px; border: 1px solid #d0d7de; border-radius: 6px; background: var(--white); }
+.graph-scroll { overflow-x: auto; scrollbar-width: thin; }
+.graph-canvas {
+  width: max-content;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 28px auto;
+  grid-template-rows: auto auto;
+  column-gap: var(--graph-gap);
+  font-size: .75rem;
+  color: #57606a;
+}
+.graph-months { grid-column: 2; display: grid; grid-template-columns: repeat(var(--weeks), calc(var(--graph-cell) + var(--graph-gap))); height: 18px; }
+.graph-months span { white-space: nowrap; font-size: 12px; line-height: 1; }
+.graph-weekdays { grid-row: 2; position: sticky; left: 0; z-index: 1; background: var(--white); display: grid; grid-template-rows: repeat(7, var(--graph-cell)); row-gap: var(--graph-gap); }
+.graph-weekdays span { font-size: 12px; line-height: var(--graph-cell); }
+.graph-days {
+  grid-row: 2;
+  grid-column: 2;
+  display: grid;
+  grid-template-rows: repeat(7, var(--graph-cell));
+  grid-auto-columns: var(--graph-cell);
+  grid-auto-flow: column;
+  gap: var(--graph-gap);
+}
+.graph-day, .graph-legend i { width: var(--graph-cell); height: var(--graph-cell); border-radius: 2px; background: var(--map-empty); outline: 1px solid rgb(27 31 36 / 6%); outline-offset: -1px; }
+.graph-day.is-padding { visibility: hidden; }
+.graph-day[data-level="1"], .graph-legend i[data-level="1"] { background: var(--map-1); }
+.graph-day[data-level="2"], .graph-legend i[data-level="2"] { background: var(--map-2); }
+.graph-day[data-level="3"], .graph-legend i[data-level="3"] { background: var(--map-3); }
+.graph-day[data-level="4"], .graph-legend i[data-level="4"] { background: var(--map-4); }
+.graph-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 16px; margin-top: 8px; color: #57606a; font-size: 12px; }
+.graph-legend { display: inline-flex; align-items: center; gap: var(--graph-gap); }
+.graph-legend i:first-of-type { margin-left: 4px; }
+.graph-legend i:last-of-type { margin-right: 4px; }
+.graph-tooltip {
+  position: absolute;
+  z-index: 5;
+  transform: translate(-50%, calc(-100% - 8px));
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #24292f;
+  color: var(--white);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.graph-tooltip::after { content: ""; position: absolute; left: 50%; bottom: -4px; width: 8px; height: 8px; background: #24292f; transform: translateX(-50%) rotate(45deg); }
 .map-bottom { min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .weekly-card, .quote-card { min-height: 0; padding: 12px 14px; border: 1px solid var(--color-border); overflow: hidden; }
 .weekly-card { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: stretch; }
@@ -267,9 +312,7 @@ h2 { font-size: 1.75rem; }
   .mobile-tabs button[aria-selected="true"] { background: var(--ink-950); color: var(--white); }
   .dashboard-slot, .slot-bot { display: none; }
   .dashboard-slot.is-mobile-active { display: grid; }
-  .map-panel { grid-template-rows: auto auto minmax(190px, 1fr) minmax(100px, .45fr); }
   .insights-rail { overflow-y: auto; }
-  .map-stats div:nth-child(3) { display: none; }
   .task-remove { opacity: 1; }
   .app-footer { padding: 0 12px; }
   .app-footer > span:first-child { display: none; }
@@ -279,14 +322,8 @@ h2 { font-size: 1.75rem; }
 @media (max-width: 520px) {
   .today-panel, .map-panel { padding: 14px; }
   h1 { font-size: 3rem; }
-  .map-panel { grid-template-rows: auto auto minmax(175px, 1fr) minmax(112px, .5fr); }
   .map-stats { gap: 22px; }
   .map-stats div { flex-direction: column-reverse; gap: 0; }
-  /* Right-to-left scrolling makes the map open on the most recent weeks. */
-  .heatmap-frame { overflow-x: auto; direction: rtl; }
-  .heatmap-frame > * { direction: ltr; }
-  .map-legend { justify-self: right; }
-  .month-labels, .heatmap-body { min-width: 630px; }
   .map-bottom { grid-template-columns: 1fr; }
   .weekly-card { display: none; }
 }
