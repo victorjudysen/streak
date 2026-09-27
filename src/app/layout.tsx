@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Mono, DM_Sans, Newsreader } from "next/font/google";
+import { sourceCodeUrl } from "@/lib/owner";
 import "./globals.css";
 
 const sans = DM_Sans({ subsets: ["latin"], variable: "--font-sans", weight: ["400", "500", "600", "700"] });
@@ -8,7 +9,7 @@ const display = Newsreader({ subsets: ["latin"], variable: "--font-serif", weigh
 
 export const metadata: Metadata = {
   title: "Streak",
-  description: "Victor’s private daily list.",
+  description: "A private daily list with a Telegram bot and a GitHub-style streak map.",
   robots: { index: false, follow: false },
 };
 
@@ -18,7 +19,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         {children}
         <footer className="app-footer">
-          <span>Private by design · v0.2</span>
+          <span>
+            <span className="footer-tagline">Private by design · </span>
+            <a href={sourceCodeUrl()}>Source code</a> (AGPL-3.0)
+          </span>
           <span>
             Designed by{" "}
             <a href="https://thisuncle.co.tz">

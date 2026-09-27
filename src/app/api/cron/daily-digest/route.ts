@@ -1,11 +1,14 @@
 import { timingSafeEqual } from "node:crypto";
 import { isConfigured } from "@/lib/config";
+import { localHour } from "@/lib/dates";
 import { listForToday } from "@/lib/tasks";
 import { sendMessage } from "@/lib/telegram/api";
 import { formatMorningDigest, taskButtons } from "@/lib/telegram/format";
 
-// Sends today's list to Victor on Telegram. Called every morning by the Netlify
-// scheduled function in netlify/functions/daily-digest.mts; requires CRON_SECRET.
+// Sends today's list to the owner on Telegram. Netlify calls this every hour on the
+// hour (netlify/functions/daily-digest.mts); it only sends when it's DIGEST_HOUR
+// (default 9) in STREAK_TIMEZONE, so "9am" means 9am wherever you live.
+// Requires CRON_SECRET. Add ?now=1 to send immediately, e.g. to test.
 
 function authorized(request: Request): boolean {
   const expected = process.env.CRON_SECRET;
@@ -17,6 +20,12 @@ function authorized(request: Request): boolean {
 
 export async function POST(request: Request): Promise<Response> {
   if (!authorized(request)) return new Response("Forbidden", { status: 403 });
+
+  const digestHour = Number(process.env.DIGEST_HOUR ?? 9);
+  const forced = new URL(request.url).searchParams.get("now") === "1";
+  if (!forced && localHour(new Date()) !== digestHour) {
+    return Response.json({ sent: false, reason: `not ${digestHour}:00 in the configured time zone` });
+  }
 
   const chatId = Number(process.env.TELEGRAM_ALLOWED_CHAT_ID);
   if (!isConfigured("database") || !process.env.TELEGRAM_BOT_TOKEN || !chatId) {

@@ -315,8 +315,8 @@ h2 { font-size: 1.75rem; }
   .insights-rail { overflow-y: auto; }
   .task-remove { opacity: 1; }
   .app-footer { padding: 0 12px; }
-  .app-footer > span:first-child { display: none; }
-  .app-footer > span:last-child { width: 100%; text-align: center; }
+  /* Keep the AGPL "Source code" link on phones; drop only the tagline. */
+  .footer-tagline { display: none; }
 }
 
 @media (max-width: 520px) {

@@ -1,7 +1,9 @@
 # Checks every pull request and push to main, then deploys:
 #   pull request → preview at https://pr-<number>--streak-thisuncle.netlify.app
 #   merge to main → production at https://streak.thisuncle.co.tz
-# Needs one repository secret, NETLIFY_AUTH_TOKEN (see README → Deploys).
+# Needs one repository secret, NETLIFY_AUTH_TOKEN, and one repository variable,
+# NETLIFY_SITE_ID (see docs/self-hosting.md → Automatic deploys). Without them
+# only the checks run.
 # The build reads its environment variables from the Netlify site, so no app
 # secrets are stored in GitHub.
 
@@ -21,7 +23,7 @@ permissions:
   contents: read
 
 env:
-  NETLIFY_SITE_ID: ced6982a-ceec-4f75-9275-2da3ebbcd9ee
+  NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
   NETLIFY_CLI_VERSION: 27.4.2
 
 jobs:
@@ -44,8 +46,8 @@ jobs:
   deploy:
     name: ${{ github.event_name == 'push' && 'Deploy to production' || 'Deploy preview' }}
     needs: check
-    # Pull requests from forks never get the deploy token.
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    # Pull requests from forks never get the deploy token; repos without Netlify set up skip deploys.
+    if: vars.NETLIFY_SITE_ID != '' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'push' && 'production' || 'preview' }}
     steps:
@@ -61,7 +63,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           if [ -z "$NETLIFY_AUTH_TOKEN" ]; then
-            echo "::error::The NETLIFY_AUTH_TOKEN repository secret is missing. See README → Deploys."
+            echo "::error::The NETLIFY_AUTH_TOKEN repository secret is missing. See docs/self-hosting.md → Automatic deploys."
             exit 1
           fi
           if [ "$GITHUB_EVENT_NAME" = "push" ]; then

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signOut } from "@/app/actions";
+import { initials, ownerName } from "@/lib/owner";
 
 const LINKS = [
   { id: "today", href: "/", label: "Today" },
@@ -51,9 +52,11 @@ export function AppHeader({
             </button>
           </form>
         ) : null}
-        <span className="avatar" aria-hidden="true">
-          VK
-        </span>
+        {initials(ownerName()) ? (
+          <span className="avatar" aria-hidden="true">
+            {initials(ownerName())}
+          </span>
+        ) : null}
       </div>
     </header>
   );
