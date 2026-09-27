@@ -116,6 +116,15 @@ Changing it signs out every other device.
 | `/undo 2` | Unticks task 2 — only if it was completed today. |
 | `/remove 2` | Deletes a task added today, or lets go of an older unfinished one. |
 
+**Tap buttons.** Every list the bot sends — `/list`, the reply after adding or
+ticking something, and the 9am message — has a button per task: tap **⬜** to
+tick it off, tap **✅** to untick it. The message updates in place and a short
+pop-up confirms what changed. The numbered commands above still work.
+
+Buttons need the webhook to accept taps (`callback_query`). `npm run telegram:setup`
+registers that; re-run it after upgrading from a version without buttons, from a
+network that can reach `api.telegram.org`.
+
 ## Routines (recurring tasks)
 
 Open **Routines** to add something you do regularly, like “Morning prayers”
