@@ -1,0 +1,49 @@
+name: Report a bug
+description: Something in Streak doesn't work as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Security problems** (anything that could expose or change someone's data) go through [private reporting](https://github.com/victorjudysen/streak/security/advisories/new) instead, please.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you saw, and what you expected to see instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we reproduce it?
+      placeholder: |
+        1. Open …
+        2. Tap …
+        3. See …
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where did it happen?
+      multiple: true
+      options:
+        - Web app (desktop)
+        - Web app (phone)
+        - Telegram bot
+        - Morning message
+        - Setup / deployment
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit or version
+      description: Which commit of Streak you're running, if you know (`git log -1 --oneline`).
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error messages or logs
+      description: Browser console, Netlify function logs or terminal output. **Remove any secrets or tokens first.**
+      render: text

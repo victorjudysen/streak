@@ -45,7 +45,16 @@ structural. The rules that matter most:
 - This is **Next.js 16**. Read the relevant guide in `node_modules/next/dist/docs/`
   before relying on older Next.js habits.
 
+## Issues
+
+Use the **Report a bug** or **Suggest a feature** form when you open an issue.
+Security problems go through [private reporting](SECURITY.md) instead.
+
 ## Pull requests
+
+`main` is protected: every change, including the maintainer's, goes through a
+pull request, and the **Lint, test, build** check must pass before it can be
+merged. The PR form includes a short checklist.
 
 - Branch from `main` and name the branch after the change (`feature/…`, `fix/…`).
 - Keep each PR to one change, with tests for new rules or fixed bugs.
