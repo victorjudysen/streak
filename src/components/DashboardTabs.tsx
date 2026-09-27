@@ -14,8 +14,15 @@ type TabId = (typeof TABS)[number]["id"];
  * Desktop shows all three panels side by side. Below 780px only the selected
  * panel is visible, so the phone view never becomes one long page.
  */
-export function DashboardTabs({ panels }: { panels: Record<TabId, ReactNode> }) {
-  const [active, setActive] = useState<TabId>("today");
+export function DashboardTabs({
+  panels,
+  initialTab = "today",
+}: {
+  panels: Record<TabId, ReactNode>;
+  /** Picking a year on the map opens the Record tab on phones. */
+  initialTab?: TabId;
+}) {
+  const [active, setActive] = useState<TabId>(initialTab);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
 
   const onKeyDown = (event: KeyboardEvent, index: number) => {

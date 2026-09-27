@@ -3,6 +3,7 @@ import "server-only";
 import { addDays, localDate, timeZone, today } from "@/lib/dates";
 import { broadcastTasksChanged } from "@/lib/realtime";
 import { routineStreak, type Routine } from "@/lib/routine-rules";
+import { fetchAll } from "@/lib/paging";
 import { db } from "@/lib/supabase";
 import { validateTitle } from "@/lib/task-rules";
 
@@ -33,16 +34,25 @@ export async function listRoutines(): Promise<RoutineSummary[]> {
   // Completed routine tasks over the last year, grouped by routine and local day.
   const day = today();
   const since = addDays(day, -366);
-  const { data: done, error: doneError } = await db()
-    .from("tasks")
-    .select("routine_id, done_at")
-    .in("routine_id", routines.map((routine) => routine.id))
-    .gte("done_at", new Date(`${addDays(since, -1)}T00:00:00Z`).toISOString());
-  if (doneError) throw new Error(`Could not load routine history: ${doneError.message}`);
+  const from = new Date(`${addDays(since, -1)}T00:00:00Z`).toISOString();
+  const ids = routines.map((routine) => routine.id);
+  // Paged: several daily routines exceed Supabase's 1,000-rows-per-request limit in a year.
+  const done = await fetchAll<{ routine_id: string; done_at: string }>((start, end) =>
+    db()
+      .from("tasks")
+      .select("routine_id, done_at")
+      .in("routine_id", ids)
+      .gte("done_at", from)
+      .order("done_at")
+      .order("id")
+      .range(start, end),
+  ).catch((error: Error) => {
+    throw new Error(`Could not load routine history: ${error.message}`);
+  });
 
   const zone = timeZone();
   const doneDays = new Map<string, Set<string>>();
-  for (const row of done as { routine_id: string; done_at: string }[]) {
+  for (const row of done) {
     const days = doneDays.get(row.routine_id) ?? new Set<string>();
     days.add(localDate(row.done_at, zone));
     doneDays.set(row.routine_id, days);

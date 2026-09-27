@@ -2,6 +2,7 @@ import "server-only";
 
 import { addDays, localDate, timeZone, today } from "@/lib/dates";
 import { broadcastTasksChanged } from "@/lib/realtime";
+import { fetchAll } from "@/lib/paging";
 import { db } from "@/lib/supabase";
 import { isActive, isScheduledOn, type Routine } from "@/lib/routine-rules";
 import {
@@ -148,19 +149,32 @@ export async function completionsByDay(since: string): Promise<Map<string, numbe
   // Start a day early so completions just after local midnight are not missed.
   const from = new Date(`${addDays(since, -1)}T00:00:00Z`).toISOString();
 
-  const { data, error } = await db()
-    .from("tasks")
-    .select("done_at")
-    .gte("done_at", from);
-
-  if (error) throw new Error(`Could not load activity: ${error.message}`);
+  // Paged: a busy year has more than Supabase's 1,000-rows-per-request limit.
+  const rows = await fetchAll<{ done_at: string }>((start, end) =>
+    db().from("tasks").select("done_at").gte("done_at", from).order("done_at").order("id").range(start, end),
+  ).catch((error: Error) => {
+    throw new Error(`Could not load activity: ${error.message}`);
+  });
 
   const counts = new Map<string, number>();
-  for (const { done_at } of data as { done_at: string }[]) {
+  for (const { done_at } of rows) {
     const day = localDate(done_at, zone);
     if (day >= since) counts.set(day, (counts.get(day) ?? 0) + 1);
   }
   return counts;
+}
+
+/** The year of the first completed task, for the map's year buttons (null if none yet). */
+export async function firstCompletionYear(): Promise<number | null> {
+  const { data, error } = await db()
+    .from("tasks")
+    .select("done_at")
+    .not("done_at", "is", null)
+    .order("done_at", { ascending: true })
+    .limit(1)
+    .maybeSingle<{ done_at: string }>();
+  if (error) throw new Error(`Could not load history: ${error.message}`);
+  return data ? Number(localDate(data.done_at, timeZone()).slice(0, 4)) : null;
 }
 
 /** Records a Telegram update id. Returns false if it was already processed. */

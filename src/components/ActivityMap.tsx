@@ -1,55 +1,96 @@
-import { formatDay } from "@/lib/dates";
-import { MAP_WEEKS, monthLabels, type MapDay } from "@/lib/stats";
+"use client";
 
-function describe(day: MapDay): string {
-  const date = formatDay(day.date, { day: "numeric", month: "short", year: "numeric" });
-  if (day.isFuture) return date;
-  return `${date}: ${day.count} task${day.count === 1 ? "" : "s"} done`;
+import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { describeDay, type Calendar } from "@/lib/stats";
+
+const WEEKDAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
+
+interface Tooltip {
+  text: string;
+  x: number;
+  y: number;
 }
 
-export function ActivityMap({ days }: { days: MapDay[] }) {
-  const labels = monthLabels(days);
+/**
+ * A GitHub-style contribution graph: fixed square cells, Sunday-first weeks,
+ * relative shading, month labels, a dark hover tooltip and a Less → More legend.
+ */
+export function ActivityMap({ calendar, rangeLabel }: { calendar: Calendar; rangeLabel: string }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [tooltip, setTooltip] = useState<Tooltip | null>(null);
+
+  // Like GitHub on narrow screens, open scrolled to the most recent weeks.
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (scroller) scroller.scrollLeft = scroller.scrollWidth;
+  }, [calendar]);
+
+  const show = (event: MouseEvent<HTMLDivElement>) => {
+    const cell = (event.target as HTMLElement).closest<HTMLElement>("[data-date]");
+    const wrap = wrapRef.current;
+    if (!cell || !wrap) return setTooltip(null);
+    const day = calendar.cells.find((c) => c?.date === cell.dataset.date);
+    if (!day) return setTooltip(null);
+    const cellBox = cell.getBoundingClientRect();
+    const wrapBox = wrap.getBoundingClientRect();
+    setTooltip({
+      text: describeDay(day),
+      x: cellBox.left + cellBox.width / 2 - wrapBox.left,
+      y: cellBox.top - wrapBox.top,
+    });
+  };
+
   return (
-    <div className="heatmap-frame">
-      <div className="month-labels" aria-hidden="true" style={{ gridTemplateColumns: `repeat(${MAP_WEEKS}, 1fr)` }}>
-        {labels.map(({ label, column }) => (
-          <span key={`${label}-${column}`} style={{ gridColumnStart: column }}>
-            {label}
-          </span>
-        ))}
-      </div>
-      <div className="heatmap-body">
-        <div className="weekday-labels" aria-hidden="true">
-          <span>Mon</span>
-          <span />
-          <span>Wed</span>
-          <span />
-          <span>Fri</span>
-          <span />
-          <span />
+    <div className="graph" ref={wrapRef} onMouseLeave={() => setTooltip(null)}>
+      <div className="graph-scroll" ref={scrollRef} onScroll={() => setTooltip(null)}>
+        <div className="graph-canvas" style={{ ["--weeks" as string]: calendar.weeks }}>
+          <div className="graph-months" aria-hidden="true">
+            {calendar.months.map(({ label, column }) => (
+              <span key={`${label}-${column}`} style={{ gridColumnStart: column }}>
+                {label}
+              </span>
+            ))}
+          </div>
+          <div className="graph-weekdays" aria-hidden="true">
+            {WEEKDAY_LABELS.map((label, index) => (
+              <span key={index}>{label}</span>
+            ))}
+          </div>
+          <div
+            className="graph-days"
+            role="img"
+            aria-label={`${calendar.total} tasks done in ${rangeLabel}. Darker squares mean more tasks done that day.`}
+            onMouseOver={show}
+            onClick={show}
+          >
+            {calendar.cells.map((cell, index) =>
+              cell ? (
+                <span key={cell.date} className="graph-day" data-date={cell.date} data-level={cell.level} />
+              ) : (
+                <span key={`pad-${index}`} className="graph-day is-padding" aria-hidden="true" />
+              ),
+            )}
+          </div>
         </div>
-        <div
-          className="heatmap"
-          role="img"
-          aria-label="Tasks completed each day over the last year. Darker squares mean more tasks done."
-        >
-          {days.map((day) => (
-            <span
-              key={day.date}
-              className={`day-cell${day.isToday ? " is-today" : ""}${day.isFuture ? " is-future" : ""}`}
-              data-level={day.level}
-              title={describe(day)}
-            />
+      </div>
+
+      <div className="graph-footer">
+        <span className="graph-note">Counts the tasks you tick off each day.</span>
+        <span className="graph-legend" aria-hidden="true">
+          Less
+          {[0, 1, 2, 3, 4].map((level) => (
+            <i key={level} data-level={level} />
           ))}
+          More
+        </span>
+      </div>
+
+      {tooltip ? (
+        <div className="graph-tooltip" role="tooltip" style={{ left: tooltip.x, top: tooltip.y }}>
+          {tooltip.text}
         </div>
-      </div>
-      <div className="map-legend">
-        <span>Less</span>
-        {[0, 1, 2, 3, 4].map((level) => (
-          <i key={level} data-level={level} />
-        ))}
-        <span>More</span>
-      </div>
+      ) : null}
     </div>
   );
 }

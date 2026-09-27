@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ActivityMap } from "@/components/ActivityMap";
 import { AppHeader } from "@/components/AppHeader";
 import { DashboardTabs } from "@/components/DashboardTabs";
@@ -8,13 +9,17 @@ import { requirePageSession } from "@/lib/auth";
 import { isConfigured, missingEnv } from "@/lib/config";
 import { formatDay, formatTime, localDate } from "@/lib/dates";
 import { TASKS_CHANGED_EVENT, realtimeTopic } from "@/lib/realtime";
-import { buildMap, mapStart, strongestWeekday, summarize, thisWeek } from "@/lib/stats";
+import { buildCalendar, lastYearRange, strongestWeekday, summarize, thisWeek, yearRange } from "@/lib/stats";
 import { isCarriedOver } from "@/lib/task-rules";
-import { completionsByDay, listForToday } from "@/lib/tasks";
+import { completionsByDay, firstCompletionYear, listForToday } from "@/lib/tasks";
 
 const WEEK_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
-export default async function Dashboard() {
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   await requirePageSession();
 
   if (!isConfigured("database")) {
@@ -27,7 +32,18 @@ export default async function Dashboard() {
   }
 
   const { day, tasks } = await listForToday();
-  const since = mapStart(day);
+  const currentYear = Number(day.slice(0, 4));
+  const firstYear = (await firstCompletionYear()) ?? currentYear;
+  const years = Array.from({ length: currentYear - firstYear + 1 }, (_, i) => currentYear - i);
+
+  // ?year=2025 shows that calendar year; anything else shows the last year, like GitHub.
+  const requested = Number((await searchParams).year);
+  const selectedYear = years.includes(requested) ? requested : null;
+  const lastYear = lastYearRange(day);
+  const range = selectedYear ? yearRange(selectedYear, day) : lastYear;
+  const rangeLabel = selectedYear ? String(selectedYear) : "the last year";
+
+  const since = range.start < lastYear.start ? range.start : lastYear.start;
   const counts = await completionsByDay(since);
 
   const views: TaskView[] = tasks.map((task) => ({
@@ -42,8 +58,10 @@ export default async function Dashboard() {
     isRoutine: task.routine_id !== null,
   }));
 
-  const map = buildMap(day, counts);
-  const summary = summarize(day, counts, since);
+  const calendar = buildCalendar(range, counts);
+  // The streak card always looks back from today; the record panel follows the selected range.
+  const summary = summarize(day, counts, lastYear.start);
+  const rangeSummary = summarize(range.end, counts, range.start);
   const week = thisWeek(day, counts);
   const weekTotal = week.reduce((sum, { count }) => sum + count, 0);
   const weekPeak = Math.max(1, ...week.map(({ count }) => count));
@@ -89,22 +107,39 @@ export default async function Dashboard() {
         </div>
       </div>
 
+      <div className="graph-heading">
+        <h3>
+          {calendar.total} {calendar.total === 1 ? "task" : "tasks"} done in {rangeLabel}
+        </h3>
+        <nav className="graph-years" aria-label="Choose a year">
+          <Link href="/" scroll={false} aria-current={selectedYear === null ? "page" : undefined}>
+            Last year
+          </Link>
+          {years.map((year) => (
+            <Link
+              key={year}
+              href={`/?year=${year}`}
+              scroll={false}
+              aria-current={selectedYear === year ? "page" : undefined}
+            >
+              {year}
+            </Link>
+          ))}
+        </nav>
+      </div>
+
+      <ActivityMap calendar={calendar} rangeLabel={rangeLabel} />
+
       <dl className="map-stats">
         <div>
-          <dt>tasks done in the last year</dt>
-          <dd>{summary.completed}</dd>
-        </div>
-        <div>
           <dt>days with a task done</dt>
-          <dd>{summary.activeDays}</dd>
+          <dd>{rangeSummary.activeDays}</dd>
         </div>
         <div>
           <dt>best run of days</dt>
-          <dd>{summary.best}</dd>
+          <dd>{rangeSummary.best}</dd>
         </div>
       </dl>
-
-      <ActivityMap days={map} />
 
       <div className="map-bottom">
         <article className="weekly-card">
@@ -179,7 +214,7 @@ export default async function Dashboard() {
   return (
     <>
       <AppHeader />
-      <DashboardTabs panels={{ today, record, bot: rail }} />
+      <DashboardTabs panels={{ today, record, bot: rail }} initialTab={selectedYear ? "record" : "today"} />
     </>
   );
 }
