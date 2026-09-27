@@ -93,7 +93,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!message?.text) return ok();
   const chatId = message.chat.id;
 
-  // First-time setup: tell Victor his chat id so he can lock the bot to it.
+  // First-time setup: tell the owner their chat id so they can lock the bot to it.
   if (!allowedChatId) {
     console.info(`telegram update ${update.update_id}: setup mode, message from chat ${chatId}`);
     return reply(update.update_id, chatId, {

@@ -1,6 +1,7 @@
-// Netlify scheduled function: every day at 06:00 UTC = 09:00 East Africa Time
-// (EAT has no daylight saving, so this never drifts). It asks the app to send
-// today's list to Telegram. Scheduled functions only run on the published
+// Netlify scheduled function: runs every hour on the hour and asks the app to send
+// today's list to Telegram. The app only sends when it's DIGEST_HOUR (default 9)
+// in STREAK_TIMEZONE, so the message arrives at 9am local time anywhere, including
+// time zones with daylight saving. Scheduled functions only run on the published
 // production deploy and cannot be reached over HTTP.
 
 export default async function dailyDigest(): Promise<Response> {
@@ -22,5 +23,5 @@ export default async function dailyDigest(): Promise<Response> {
 }
 
 export const config = {
-  schedule: "0 6 * * *",
+  schedule: "0 * * * *",
 };

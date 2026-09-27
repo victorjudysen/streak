@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security problem privately
+    url: https://github.com/victorjudysen/streak/security/advisories/new
+    about: Please don't open a public issue for security problems.
+  - name: Help setting up your own copy
+    url: https://github.com/victorjudysen/streak/blob/main/docs/self-hosting.md
+    about: The self-hosting guide covers setup and every setting.

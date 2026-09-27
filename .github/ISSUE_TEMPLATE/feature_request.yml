@@ -1,0 +1,31 @@
+name: Suggest a feature
+description: An idea that would make Streak more useful.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Streak is a small, single-person app guided by [the product goals](https://github.com/victorjudysen/streak/blob/main/docs/product-goals.md). Ideas that fit them are the most likely to be picked up.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation, not just the feature. What are you trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contributing
+      options:
+        - label: I'd like to build this myself (please agree the approach here before opening a PR).

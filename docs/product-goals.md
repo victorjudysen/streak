@@ -23,7 +23,7 @@ person can create and follow their own system.
 
 ### Phase 1: Personal foundation
 
-Build around Victor's real routines and use the product regularly. Prove that
+Build around the maintainer's real routines and use the product regularly. Prove that
 the core loop is genuinely useful before broadening the audience.
 
 The core loop is:
@@ -77,7 +77,7 @@ operations.
 
 These outcomes describe direction, not a fixed implementation order:
 
-- Victor can use Streak as the source of truth for his current habits.
+- The maintainer can use Streak as the source of truth for their current habits.
 - Completing a habit persists across page loads and records when it happened.
 - A completed calendar day cannot be edited or backfilled through the website,
   Telegram, or any other user-facing interface.
@@ -167,7 +167,7 @@ to remember the problem behind an idea, not just the proposed feature.
   incorrectly before a day closed, while still preventing retrospective
   backfilling?
 - When does a habit count as completed if it spans multiple steps or quantities?
-- Which statistics actually help Victor make a decision or change behavior?
+- Which statistics actually help a person make a decision or change behavior?
 - Which activities should count toward the unified map, and how should unlike
   activities contribute to a day's intensity without implying false
   equivalence between them?

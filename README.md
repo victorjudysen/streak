@@ -1,186 +1,117 @@
 # Streak
 
-Victor’s private daily list. Add tasks in the web app or by messaging a Telegram
-bot; tick them off from either place. Both write to the same Supabase database,
-and the dashboard shows a year of real activity.
+[![Check and deploy](https://github.com/victorjudysen/streak/actions/workflows/deploy.yml/badge.svg)](https://github.com/victorjudysen/streak/actions/workflows/deploy.yml)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
-Built with Next.js 16 (App Router), Supabase (Postgres), and plain CSS.
+A private daily list you run yourself. Add and tick off tasks in the web app or
+by messaging your own Telegram bot, keep routines that repeat on the days you
+choose, and watch a year of showing up fill in on a GitHub-style activity graph.
 
-The long-term direction lives in [docs/product-goals.md](docs/product-goals.md);
-the rules for building on this code live in [docs/foundation.md](docs/foundation.md).
+Streak is built for **one person per install**: you deploy your own copy, with
+your own database and your own bot, and nobody else can see your list.
 
-## First-time setup
+![The Streak dashboard: today's list, a GitHub-style activity graph, and the current streak](docs/images/dashboard.png)
 
-### 1. Create the database tables
+## Features
 
-Open the Supabase dashboard → **SQL Editor** → **New query**, paste the contents of
-[`supabase/migrations/20260924000000_create_tasks.sql`](supabase/migrations/20260924000000_create_tasks.sql),
-and click **Run**. It creates two tables: `tasks` and `telegram_updates`.
-Then do the same with
-[`20260924140000_create_app_settings.sql`](supabase/migrations/20260924140000_create_app_settings.sql),
-which stores the password once you change it in the app.
-Then [`20260926120000_create_routines.sql`](supabase/migrations/20260926120000_create_routines.sql),
-which adds recurring tasks.
+- **Daily list.** Add, tick off and remove tasks. Unfinished tasks carry over to
+  the next day, labelled with the day they came from.
+- **Telegram bot.** Send a message to add a task, tap a button to tick it off,
+  or use `/list`, `/done 2`, `/undo 2` and `/remove 2`. Only your chat can use it.
+- **Morning message.** Every day at 9am your time, the bot sends today’s list
+  with a tap button per task.
+- **Routines.** Tasks that repeat on chosen weekdays and appear on the list by
+  themselves, each with its own streak.
+- **GitHub-style activity graph.** A year of completed tasks, shaded relative to
+  your other days, with a hover tooltip and a view per calendar year.
+- **Live updates.** Tick something off in Telegram and the open dashboard updates
+  within a second.
+- **Honest records.** Past days are closed: a completion can’t be backfilled or
+  erased later, from the app or the bot.
+- **Private by design.** One password, a signed login cookie, and a database the
+  public key can’t read. All data access goes through your server.
 
-### 2. Fill in `.env.local`
+| Phone | Activity graph | Routines |
+| --- | --- | --- |
+| ![Today's list on a phone](docs/images/phone-today.png) | ![The activity graph with a tooltip](docs/images/activity-graph.png) | ![The routines page](docs/images/routines.png) |
 
-`.env.local` already has the project URL, publishable key, and two generated
-secrets. Add the values marked `TODO`:
+## How it behaves
 
-| Variable | Where it comes from |
-| --- | --- |
-| `SUPABASE_SECRET_KEY` | Supabase → Project Settings → API Keys → **Secret keys** (starts `sb_secret_`). Server-only; never share it. |
-| `APP_PASSWORD` | The starting password for signing in. Once you change it under Settings, the app’s own copy is used instead. |
-| `TELEGRAM_BOT_TOKEN` | In Telegram, message **@BotFather**, send `/newbot`, follow the prompts. |
-| `TELEGRAM_ALLOWED_CHAT_ID` | Leave empty for now — see step 5. |
-| `APP_URL` | The public `https://` address once deployed (step 4). |
+- **Today** is decided in your configured time zone (`STREAK_TIMEZONE`), not the
+  server’s clock.
+- **Carry-over.** Unfinished tasks and routines from earlier days stay on today’s
+  list until you tick them off or let them go. Letting go hides a task but keeps
+  it on record.
+- **Closed days stay closed.** A completion recorded on an earlier day can’t be
+  undone or removed.
+- **Routines** appear on their scheduled days. Removing today’s copy skips it for
+  today only. Pausing stops it until you resume; removing it stops it for good
+  and keeps its history.
+- **The activity graph** works like GitHub’s contribution graph: Sunday-first
+  weeks ending today, one square per day shaded by quartile of your active days
+  (so one huge day doesn’t wash out the rest), and year buttons (`/?year=2025`).
+- **Streaks and stats** are calculated only from real completion times.
+- **Editing** a Telegram message you already sent does nothing; send a new one.
 
-`.env.example` documents every variable and is safe to commit; `.env.local` is not.
-
-### 3. Run it locally
-
-```bash
-npm install
-npm run dev
-```
-
-Open <http://localhost:3000> and sign in with `APP_PASSWORD`.
-
-### 4. Deploy (Netlify)
-
-The app is the Netlify site **streak-thisuncle**, served at
-<https://streak.thisuncle.co.tz> (DNS is managed by Netlify).
-
-Deploys are automatic through GitHub Actions (see [Deploys](#deploys)). The
-app's environment variables live on Netlify → Site configuration →
-Environment variables; secret ones are set for the production,
-deploy-preview and branch-deploy contexts. After changing a variable, re-run
-the latest "Check and deploy" run on `main` (or run `netlify deploy --build --prod`
-from this folder).
-
-Telegram needs this public https address to deliver messages, so the bot only
-works once the app is deployed.
-
-### 5. Connect the Telegram bot
-
-```bash
-npm run telegram:setup
-```
-
-This registers `https://<APP_URL>/api/telegram` with Telegram. Then open your bot
-in Telegram and send `/start`. Because `TELEGRAM_ALLOWED_CHAT_ID` is still empty,
-the bot replies with your chat id. Add it as `TELEGRAM_ALLOWED_CHAT_ID` on Netlify
-and in `.env.local`, then redeploy. From then on the bot answers only you.
-
-## Deploys
-
-[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs lint, tests,
-a build and a type check on every pull request and every push to `main`, then:
-
-| Event | Deploys to |
-| --- | --- |
-| Pull request | Preview: `https://pr-<number>--streak-thisuncle.netlify.app` (shown in the run summary) |
-| Merge to `main` | Production: <https://streak.thisuncle.co.tz> |
-
-Previews use the same environment variables as production, **including the real
-database**, so tasks you change on a preview change your real list.
-
-The workflow needs one GitHub secret, `NETLIFY_AUTH_TOKEN`:
-
-1. Netlify → avatar → **User settings** → **Applications** → **Personal access tokens** → **New access token**. Name it `streak-github-actions` and pick an expiry.
-2. Add it to the repo (the command prompts for the value, so it isn't saved in your shell history):
-   ```bash
-   gh secret set NETLIFY_AUTH_TOKEN
-   ```
-   or GitHub → repo → Settings → Secrets and variables → Actions → New repository secret.
-
-When the token expires, create a new one and run the same command again.
-
-## Changing your password
-
-Open **Settings** (top of the page) and enter your current password and a new
-one (at least 10 characters). The new password is stored as a scrypt hash in
-Supabase’s `app_settings` table and replaces `APP_PASSWORD` from then on.
-Changing it signs out every other device.
-
-**Forgot it?** In Supabase → Table Editor, delete the single row in
-`app_settings`. The app then falls back to `APP_PASSWORD` again.
-
-## Using the bot
+## The Telegram bot
 
 | Message | What happens |
 | --- | --- |
 | `Call the bank` | Adds a task for today. Several lines add several tasks. |
-| `/list` | Today’s numbered list. |
+| `/list` | Today’s numbered list, with a tap button per task. |
 | `/done 2` | Ticks off task 2. Also `/done 1 3`, `/done 2-4`, `/done all`. |
-| `/undo 2` | Unticks task 2 — only if it was completed today. |
+| `/undo 2` | Unticks task 2, only if it was completed today. |
 | `/remove 2` | Deletes a task added today, or lets go of an older unfinished one. |
 
-**Tap buttons.** Every list the bot sends — `/list`, the reply after adding or
-ticking something, and the 9am message — has a button per task: tap **⬜** to
-tick it off, tap **✅** to untick it. The message updates in place and a short
-pop-up confirms what changed. The numbered commands above still work.
+Tap **⬜** under a list to tick a task off and **✅** to untick it. The message
+updates in place.
 
-Buttons need the webhook to accept taps (`callback_query`). `npm run telegram:setup`
-registers that; re-run it after upgrading from a version without buttons, from a
-network that can reach `api.telegram.org`.
+## Run your own
 
-## Routines (recurring tasks)
+You need free accounts on [Supabase](https://supabase.com) (database),
+[Netlify](https://www.netlify.com) (hosting) and, for the bot,
+[Telegram](https://telegram.org). The full guide, including every setting, is
+in **[docs/self-hosting.md](docs/self-hosting.md)**. In short:
 
-Open **Routines** to add something you do regularly, like “Morning prayers”
-every day or “Gym” on Mon/Wed/Fri. On those days it appears on the list by
-itself, marked **↻ Routine** in the app and 🔁 in Telegram, and you tick it off
-the same way as any task.
+1. Fork this repo and create a Supabase project; apply the migrations with
+   `supabase db push`.
+2. Copy `.env.example` to `.env.local` and fill it in.
+3. Deploy to Netlify and add the same settings there.
+4. Create a bot with @BotFather, run `npm run telegram:setup`, and lock the bot
+   to your chat.
 
-- Today’s routine tasks are created the first time anything loads the list —
-  the dashboard, the bot, or the 9am message — so they are always in the
-  morning message.
-- **Unfinished routines carry over** like other tasks, so a missed day shows up
-  again next to that day’s copy (“From Fri 25 Sept”).
-- Removing today’s routine task **skips it for today**; the routine carries on
-  tomorrow.
-- **Pause** stops a routine appearing until you resume it. **Remove** stops it
-  for good but keeps its history.
-- Each routine shows its streak: the scheduled days in a row it was completed.
-  Days it isn’t scheduled for don’t break it.
+## Development
 
-## Morning message
-
-Every day at **09:00 East Africa Time** the bot sends today’s list to your
-Telegram chat, including anything carried over, numbered so you can reply
-`/done 2` straight away. An empty list gets a short nudge instead.
-
-- The schedule lives in [`netlify/functions/daily-digest.mts`](netlify/functions/daily-digest.mts)
-  (`0 6 * * *` = 06:00 UTC = 09:00 EAT). It is a fixed UTC time: changing
-  `STREAK_TIMEZONE` does not move it.
-- It runs only on the live production site, never on previews.
-- It calls `POST /api/cron/daily-digest`, which requires the `CRON_SECRET`
-  environment variable. To send one now, e.g. to test:
-  ```bash
-  curl -X POST https://streak.thisuncle.co.tz/api/cron/daily-digest -H "authorization: Bearer $CRON_SECRET"
-  ```
-
-## How the rules work
-
-- **Today** is decided in `STREAK_TIMEZONE`, not the server’s clock.
-- Unfinished tasks from earlier days **carry over** to today’s list, labelled with their original date.
-- **Closed days stay closed.** A completion recorded on an earlier day cannot be undone or removed, from the app or the bot.
-- Letting go of an old unfinished task hides it from the list but keeps the row, so the record stays honest.
-- The activity map, streak, and weekly numbers are calculated only from real completion times.
-- The activity map works like GitHub’s contribution graph: Sunday-first weeks
-  ending today, one square per day shaded by quartile of your active days (so
-  one huge day doesn’t wash out the rest), a hover tooltip per day, and year
-  buttons to view a whole calendar year (`/?year=2025`).
-- The dashboard updates **live**: a task added or ticked off in Telegram (or on another device) appears within a second, without refreshing. The “Live” badge on the Today panel shows the connection; if it drops, the page catches up when you return to the tab.
-- Editing a Telegram message you already sent does nothing. Send a new message instead.
-
-## Scripts
+Next.js 16 (App Router), TypeScript, Supabase Postgres, plain CSS, Vitest.
 
 ```bash
-npm run dev             # local development server
-npm test                # unit tests (rules, dates, stats, bot commands, sessions)
+npm install
+npm run dev             # http://localhost:3000
+npm test                # unit tests
 npm run lint            # ESLint
 npm run typecheck       # TypeScript
 npm run build           # production build
 npm run telegram:setup  # point the Telegram bot at APP_URL
 ```
+
+How the code is organised, and the rules for changing it, are in
+[docs/foundation.md](docs/foundation.md). The product’s direction and idea inbox
+are in [docs/product-goals.md](docs/product-goals.md).
+
+## Contributing and security
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+To report a security problem, follow [SECURITY.md](SECURITY.md) rather than
+opening a public issue.
+
+## License
+
+Copyright © 2026 [ThisUncle Technologies](https://thisuncle.co.tz) and contributors.
+
+Streak is free software under the
+[GNU Affero General Public License v3.0 or later](LICENSE). You can use, study,
+change and share it. If you run a modified version for other people over a
+network, you must offer them its source code too. Set `SOURCE_CODE_URL` so the
+“Source code” link in the footer points at your version.
+
+Designed by [ThisUncle Technologies](https://thisuncle.co.tz).

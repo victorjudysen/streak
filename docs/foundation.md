@@ -6,7 +6,11 @@ It replaces the Laravel foundation.
 ## Architecture
 
 - **Next.js 16 App Router**, TypeScript, plain CSS (no Tailwind). Deployed as a
-  Node app on Netlify (`streak-thisuncle`, https://streak.thisuncle.co.tz).
+  Node app on Netlify (see `docs/self-hosting.md`; the maintainer's copy is
+  described in `docs/thisuncle-deployment.md`).
+- **One person per install.** `OWNER_NAME` personalises the header;
+  `STREAK_TIMEZONE` (default UTC) decides "today". Licensed AGPL-3.0-or-later; the
+  footer links to `SOURCE_CODE_URL`.
 - **Supabase Postgres** is the only store. All reads and writes happen on the
   server with `SUPABASE_SECRET_KEY` (`src/lib/supabase.ts`). Row Level Security is
   enabled with no policies, so the publishable key alone can do nothing.
@@ -85,8 +89,9 @@ Sub-agents may read but must not modify, and should flag needed changes instead:
 
 `.github/workflows/deploy.yml` is the deploy path: checks on every PR and push to
 `main`, preview deploys (`pr-<n>` alias) for PRs, production on merge. It uses the
-`NETLIFY_AUTH_TOKEN` repo secret; app environment variables come from the Netlify
-site. Don't pass `--context deploy-preview` to `netlify deploy` — the Next.js
+`NETLIFY_SITE_ID` repo variable and the `NETLIFY_AUTH_TOKEN` repo secret (deploys
+are skipped when the variable is unset, e.g. in forks); app environment variables
+come from the Netlify site. Don't pass `--context deploy-preview` to `netlify deploy` — the Next.js
 plugin then fails with a 403 fetching site extensions.
 
 ## Scheduled jobs
@@ -94,8 +99,8 @@ plugin then fails with a 403 fetching site extensions.
 Netlify scheduled functions live in `netlify/functions/` and only call app
 endpoints under `/api/cron/*`, authenticated with `CRON_SECRET`, so all logic
 stays in the Next.js app and its shared libraries. Schedules are cron strings in
-UTC. Existing: `daily-digest` at 06:00 UTC (09:00 EAT) sends today's list to
-Telegram.
+UTC. Existing: `daily-digest` runs hourly, and the endpoint sends today's list
+only when it's `DIGEST_HOUR` (default 9) in `STREAK_TIMEZONE`.
 
 ## Database changes
 

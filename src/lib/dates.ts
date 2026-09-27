@@ -1,7 +1,7 @@
-// All "which day is it?" questions are answered in Victor's configured time zone,
-// never the server's. A day is represented as an ISO date string: "2026-09-24".
+// All "which day is it?" questions are answered in the configured time zone
+// (STREAK_TIMEZONE), never the server's. A day is represented as an ISO date string: "2026-09-24".
 
-export const DEFAULT_TIME_ZONE = "Africa/Dar_es_Salaam";
+export const DEFAULT_TIME_ZONE = "UTC";
 
 export function timeZone(): string {
   return process.env.STREAK_TIMEZONE || DEFAULT_TIME_ZONE;
@@ -56,4 +56,10 @@ export function formatTime(instant: string, zone = timeZone()): string {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(instant));
+}
+
+/** The hour (0–23) an instant falls in, in the given time zone. */
+export function localHour(instant: Date, zone = timeZone()): number {
+  const hour = new Intl.DateTimeFormat("en-GB", { timeZone: zone, hour: "2-digit", hourCycle: "h23" }).format(instant);
+  return Number(hour);
 }
