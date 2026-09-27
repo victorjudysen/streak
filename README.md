@@ -106,7 +106,7 @@ opening a public issue.
 
 ## License
 
-Copyright © 2026 Victor Kweka and contributors.
+Copyright © 2026 [ThisUncle Technologies](https://thisuncle.co.tz) and contributors.
 
 Streak is free software under the
 [GNU Affero General Public License v3.0 or later](LICENSE). You can use, study,
