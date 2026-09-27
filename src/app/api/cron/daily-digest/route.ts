@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { isConfigured } from "@/lib/config";
 import { listForToday } from "@/lib/tasks";
 import { sendMessage } from "@/lib/telegram/api";
-import { formatMorningDigest } from "@/lib/telegram/format";
+import { formatMorningDigest, taskButtons } from "@/lib/telegram/format";
 
 // Sends today's list to Victor on Telegram. Called every morning by the Netlify
 // scheduled function in netlify/functions/daily-digest.mts; requires CRON_SECRET.
@@ -26,7 +26,7 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     const { day, tasks } = await listForToday();
-    await sendMessage(chatId, formatMorningDigest(day, tasks));
+    await sendMessage(chatId, formatMorningDigest(day, tasks), taskButtons(tasks));
     console.info(`daily digest: sent for ${day} (${tasks.length} tasks)`);
     return Response.json({ sent: true, day, tasks: tasks.length });
   } catch (error) {

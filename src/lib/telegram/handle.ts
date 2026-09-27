@@ -3,7 +3,7 @@ import "server-only";
 import type { Task } from "@/lib/task-rules";
 import { addTasks, completeTask, listForToday, removeTask, undoTask } from "@/lib/tasks";
 import { parseCommand } from "@/lib/telegram/commands";
-import { formatList } from "@/lib/telegram/format";
+import { formatList, parseButton } from "@/lib/telegram/format";
 
 export const HELP_TEXT = [
   "Streak bot — your daily list.",
@@ -39,25 +39,31 @@ async function applyByNumber(
   return lines;
 }
 
-/** Runs one message and returns the reply text. */
-export async function handleMessage(text: string): Promise<string> {
+/** A reply's text, plus the list it shows (if any) so tap buttons can be attached. */
+export interface BotReply {
+  text: string;
+  tasks?: Task[];
+}
+
+/** Runs one message and returns the reply. */
+export async function handleMessage(text: string): Promise<BotReply> {
   const command = parseCommand(text);
 
   switch (command.kind) {
     case "help":
-      return HELP_TEXT;
+      return { text: HELP_TEXT };
     case "invalid":
-      return command.message;
+      return { text: command.message };
     case "list": {
       const { day, tasks } = await listForToday();
-      return formatList(day, tasks);
+      return { text: formatList(day, tasks), tasks };
     }
     case "add": {
       const result = await addTasks(command.titles, "telegram");
-      if (!result.ok) return `Nothing was added. ${result.error}`;
+      if (!result.ok) return { text: `Nothing was added. ${result.error}` };
       const { day, tasks } = await listForToday();
       const added = result.task.map((task) => `Added: ${task.title}`);
-      return [...added, "", formatList(day, tasks)].join("\n");
+      return { text: [...added, "", formatList(day, tasks)].join("\n"), tasks };
     }
     case "done":
     case "undo":
@@ -68,7 +74,7 @@ export async function handleMessage(text: string): Promise<string> {
         command.targets === "all"
           ? before.tasks.flatMap((task, index) => (task.done_at ? [] : [index + 1]))
           : command.targets;
-      if (targets.length === 0) return "Everything on the list is already done. 🎉";
+      if (targets.length === 0) return { text: "Everything on the list is already done. 🎉" };
 
       const lines =
         command.kind === "done"
@@ -84,7 +90,27 @@ export async function handleMessage(text: string): Promise<string> {
               );
 
       const after = await listForToday();
-      return [...lines, "", formatList(after.day, after.tasks)].join("\n");
+      return { text: [...lines, "", formatList(after.day, after.tasks)].join("\n"), tasks: after.tasks };
     }
   }
+}
+
+/**
+ * Applies a tap on a task button. Returns the pop-up text and the fresh list, so
+ * the tapped message can be updated even when nothing changed (e.g. the task was
+ * already ticked off in the app).
+ */
+export async function handleButton(data: string | undefined): Promise<{ notice: string; text: string; tasks: Task[] }> {
+  const button = parseButton(data);
+  let notice: string;
+  if (!button) {
+    notice = "That button is no longer valid.";
+  } else {
+    const result = button.action === "done" ? await completeTask(button.taskId) : await undoTask(button.taskId);
+    notice = result.ok
+      ? `${button.action === "done" ? "Done" : "Undone"}: ${result.task.title}`
+      : result.error;
+  }
+  const { day, tasks } = await listForToday();
+  return { notice, text: formatList(day, tasks), tasks };
 }
