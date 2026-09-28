@@ -63,8 +63,9 @@ your own database and your own bot, and nobody else can see your list.
 | `/undo 2` | Unticks task 2, only if it was completed today. |
 | `/remove 2` | Deletes a task added today, or lets go of an older unfinished one. |
 
-Tap **⬜** under a list to tick a task off and **✅** to untick it. The message
-updates in place.
+Tap a task’s button under a list to tick it off. The message updates in place:
+the task gets a ✅ in the list and its button disappears, so the buttons only
+ever show what’s left to do. Tapped the wrong one? Send `/undo` with its number.
 
 ## Run your own
 

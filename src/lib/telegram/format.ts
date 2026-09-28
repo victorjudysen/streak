@@ -31,7 +31,9 @@ export function formatMorningDigest(day: string, tasks: Task[]): string {
   const summary =
     `${open} task${open === 1 ? "" : "s"} for today` +
     (carried > 0 ? `, ${carried} carried over from earlier.` : ".");
-  return [greeting, summary, "", formatList(day, tasks), "", "Tap a task below to tick it off."].join("\n");
+  const lines = [greeting, summary, "", formatList(day, tasks)];
+  if (open > 0) lines.push("", "Tap a task below to tick it off.");
+  return lines.join("\n");
 }
 
 // ── Tap buttons ──────────────────────────────────────────────────────────────
@@ -49,17 +51,20 @@ function shorten(title: string): string {
 }
 
 /**
- * One button per task, numbered like the list: ⬜ ticks it off, ✅ unticks it.
- * Only tasks completed today appear as ✅ (the list never shows older ones), so
- * every ✅ button is undoable. `callback_data` is "d:<id>" or "u:<id>" (≤ 64 bytes).
+ * One button per unfinished task: tapping it ticks the task off, and it drops out
+ * of the buttons when the message refreshes. Buttons keep the task's number from
+ * the full list above them, so `/done 3` and `/undo 7` still match. No buttons
+ * once everything is done. `callback_data` is "d:<id>" (≤ 64 bytes); "u:<id>"
+ * (undo) is still accepted from older messages.
  */
 export function taskButtons(tasks: Task[]): InlineKeyboard | undefined {
-  if (tasks.length === 0) return undefined;
-  return tasks.slice(0, MAX_BUTTONS).map((task, index) => [
-    {
-      text: `${task.done_at ? "✅" : "⬜"} ${index + 1}. ${shorten(task.title)}`,
-      callback_data: `${task.done_at ? "u" : "d"}:${task.id}`,
-    },
+  const open = tasks
+    .map((task, index) => ({ task, number: index + 1 }))
+    .filter(({ task }) => !task.done_at)
+    .slice(0, MAX_BUTTONS);
+  if (open.length === 0) return undefined;
+  return open.map(({ task, number }) => [
+    { text: `⬜ ${number}. ${shorten(task.title)}`, callback_data: `d:${task.id}` },
   ]);
 }
 
