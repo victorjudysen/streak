@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ActivityMap } from "@/components/ActivityMap";
 import { AppHeader } from "@/components/AppHeader";
 import { DashboardTabs } from "@/components/DashboardTabs";
+import { DayDetails } from "@/components/DayDetails";
 import { LiveUpdates } from "@/components/LiveUpdates";
 import { SetupNotice } from "@/components/SetupNotice";
 import { TaskBoard, type TaskView } from "@/components/TaskBoard";
@@ -9,9 +10,18 @@ import { requirePageSession } from "@/lib/auth";
 import { isConfigured, missingEnv } from "@/lib/config";
 import { formatDay, formatTime, localDate } from "@/lib/dates";
 import { TASKS_CHANGED_EVENT, realtimeTopic } from "@/lib/realtime";
-import { buildCalendar, lastYearRange, strongestWeekday, summarize, thisWeek, yearRange } from "@/lib/stats";
+import {
+  buildCalendar,
+  dashboardHref,
+  lastYearRange,
+  parseDayParam,
+  strongestWeekday,
+  summarize,
+  thisWeek,
+  yearRange,
+} from "@/lib/stats";
 import { isCarriedOver } from "@/lib/task-rules";
-import { completionsByDay, firstCompletionYear, listForToday } from "@/lib/tasks";
+import { completedOn, completionsByDay, firstCompletionYear, listForToday } from "@/lib/tasks";
 
 const WEEK_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -37,8 +47,12 @@ export default async function Dashboard({
   const years = Array.from({ length: currentYear - firstYear + 1 }, (_, i) => currentYear - i);
 
   // ?year=2025 shows that calendar year; anything else shows the last year, like GitHub.
-  const requested = Number((await searchParams).year);
+  const params = await searchParams;
+  const requested = Number(params.year);
   const selectedYear = years.includes(requested) ? requested : null;
+  // ?day=2026-09-27 opens that day's completed tasks under the graph.
+  const selectedDay = parseDayParam(params.day, day);
+  const dayTasks = selectedDay ? await completedOn(selectedDay) : [];
   const lastYear = lastYearRange(day);
   const range = selectedYear ? yearRange(selectedYear, day) : lastYear;
   const rangeLabel = selectedYear ? String(selectedYear) : "the last year";
@@ -128,7 +142,7 @@ export default async function Dashboard({
         </nav>
       </div>
 
-      <ActivityMap calendar={calendar} rangeLabel={rangeLabel} />
+      <ActivityMap calendar={calendar} rangeLabel={rangeLabel} range={range} year={selectedYear} selectedDay={selectedDay} />
 
       <dl className="map-stats">
         <div>
@@ -141,35 +155,39 @@ export default async function Dashboard({
         </div>
       </dl>
 
-      <div className="map-bottom">
-        <article className="weekly-card">
-          <div>
-            <p className="eyebrow">This week</p>
-            <strong>{weekTotal}</strong>
-            <small>tasks done</small>
-          </div>
-          <div className="week-bars" aria-label="Tasks done each day this week">
-            {week.map(({ date, count }, index) => (
-              <span key={date} style={{ ["--bar-height" as string]: `${(count / weekPeak) * 100}%` }}>
-                <i title={`${count} done`} />
-                <small>{WEEK_LETTERS[index]}</small>
-              </span>
-            ))}
-          </div>
-        </article>
-        <article className="quote-card">
-          {rhythm ? (
-            <p>
-              Your strongest day is <em>{rhythm}.</em>
-            </p>
-          ) : (
-            <p>
-              Keep going — patterns show after <em>ten active days.</em>
-            </p>
-          )}
-          <span>Calculated from the tasks you have completed.</span>
-        </article>
-      </div>
+      {selectedDay ? (
+        <DayDetails day={selectedDay} today={day} tasks={dayTasks} closeHref={dashboardHref(selectedYear, null)} />
+      ) : (
+        <div className="map-bottom">
+          <article className="weekly-card">
+            <div>
+              <p className="eyebrow">This week</p>
+              <strong>{weekTotal}</strong>
+              <small>tasks done</small>
+            </div>
+            <div className="week-bars" aria-label="Tasks done each day this week">
+              {week.map(({ date, count }, index) => (
+                <span key={date} style={{ ["--bar-height" as string]: `${(count / weekPeak) * 100}%` }}>
+                  <i title={`${count} done`} />
+                  <small>{WEEK_LETTERS[index]}</small>
+                </span>
+              ))}
+            </div>
+          </article>
+          <article className="quote-card">
+            {rhythm ? (
+              <p>
+                Your strongest day is <em>{rhythm}.</em>
+              </p>
+            ) : (
+              <p>
+                Keep going — patterns show after <em>ten active days.</em>
+              </p>
+            )}
+            <span>Calculated from the tasks you have completed.</span>
+          </article>
+        </div>
+      )}
     </section>
   );
 
@@ -214,7 +232,7 @@ export default async function Dashboard({
   return (
     <>
       <AppHeader />
-      <DashboardTabs panels={{ today, record, bot: rail }} initialTab={selectedYear ? "record" : "today"} />
+      <DashboardTabs panels={{ today, record, bot: rail }} initialTab={selectedYear || selectedDay ? "record" : "today"} />
     </>
   );
 }

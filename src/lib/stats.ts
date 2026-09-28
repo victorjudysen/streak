@@ -119,6 +119,36 @@ export function describeDay(day: CalendarDay): string {
   return `${day.count} task${day.count === 1 ? "" : "s"} done on ${date}.`;
 }
 
+// ── Selected day (click a square) ─────────────────────────────────────────────
+
+/** A ?day= value, accepted only if it's a real calendar date that isn't in the future. */
+export function parseDayParam(value: unknown, today: string): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) return null;
+  return value <= today ? value : null;
+}
+
+/** The dashboard address for a year view and/or selected day. */
+export function dashboardHref(year: number | null, day: string | null): string {
+  const params = new URLSearchParams();
+  if (year) params.set("year", String(year));
+  if (day) params.set("day", day);
+  const query = params.toString();
+  return query ? `/?${query}` : "/";
+}
+
+/**
+ * Keyboard movement across the graph, like GitHub's: up/down move a day within the
+ * week, left/right move a week. Stays inside the range shown.
+ */
+export function nextFocusDay(day: string, key: string, range: CalendarRange): string {
+  const step = { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -7, ArrowRight: 7 }[key];
+  if (!step) return day;
+  const next = addDays(day, step);
+  return next < range.start || next > range.end ? day : next;
+}
+
 export interface StreakSummary {
   /** Days in a row, ending today or yesterday, with at least one task done. */
   current: number;

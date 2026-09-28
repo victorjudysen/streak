@@ -164,6 +164,23 @@ export async function completionsByDay(since: string): Promise<Map<string, numbe
   return counts;
 }
 
+/**
+ * Tasks completed on one local day, in the order they were ticked off. Uses the
+ * same rule as completionsByDay(), so the list always matches that day's square.
+ */
+export async function completedOn(day: string): Promise<Task[]> {
+  const zone = timeZone();
+  // A two-day margin either side covers every time zone; the exact day is filtered below.
+  const from = new Date(`${addDays(day, -1)}T00:00:00Z`).toISOString();
+  const to = new Date(`${addDays(day, 2)}T00:00:00Z`).toISOString();
+  const rows = await fetchAll<Task>((start, end) =>
+    db().from("tasks").select(COLUMNS).gte("done_at", from).lt("done_at", to).order("done_at").order("id").range(start, end),
+  ).catch((error: Error) => {
+    throw new Error(`Could not load that day: ${error.message}`);
+  });
+  return rows.filter((task) => task.done_at && localDate(task.done_at, zone) === day);
+}
+
 /** The year of the first completed task, for the map's year buttons (null if none yet). */
 export async function firstCompletionYear(): Promise<number | null> {
   const { data, error } = await db()

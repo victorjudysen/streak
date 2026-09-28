@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   buildCalendar,
+  dashboardHref,
   describeDay,
   lastYearRange,
   levelFor,
+  nextFocusDay,
+  parseDayParam,
   quartiles,
   strongestWeekday,
   summarize,
@@ -117,5 +120,35 @@ describe("strongestWeekday", () => {
     for (let day = 1; day <= 14; day++) entries[`2026-09-${String(day).padStart(2, "0")}`] = 1;
     entries["2026-09-08"] = 9; // a Tuesday
     expect(strongestWeekday(counts(entries))).toBe("Tuesday");
+  });
+});
+
+describe("selected day", () => {
+  it("accepts only real, non-future dates", () => {
+    expect(parseDayParam("2026-09-20", TODAY)).toBe("2026-09-20");
+    expect(parseDayParam(TODAY, TODAY)).toBe(TODAY);
+    expect(parseDayParam("2026-09-25", TODAY)).toBeNull(); // tomorrow
+    expect(parseDayParam("2026-02-30", TODAY)).toBeNull(); // not a date
+    expect(parseDayParam("20260920", TODAY)).toBeNull();
+    expect(parseDayParam(["2026-09-20"], TODAY)).toBeNull();
+    expect(parseDayParam(undefined, TODAY)).toBeNull();
+  });
+
+  it("builds dashboard addresses", () => {
+    expect(dashboardHref(null, null)).toBe("/");
+    expect(dashboardHref(null, "2026-09-20")).toBe("/?day=2026-09-20");
+    expect(dashboardHref(2025, "2025-03-01")).toBe("/?year=2025&day=2025-03-01");
+    expect(dashboardHref(2025, null)).toBe("/?year=2025");
+  });
+
+  it("moves with the arrow keys like GitHub's graph, staying in range", () => {
+    const range = { start: "2026-09-01", end: TODAY };
+    expect(nextFocusDay("2026-09-10", "ArrowDown", range)).toBe("2026-09-11");
+    expect(nextFocusDay("2026-09-10", "ArrowUp", range)).toBe("2026-09-09");
+    expect(nextFocusDay("2026-09-10", "ArrowRight", range)).toBe("2026-09-17");
+    expect(nextFocusDay("2026-09-10", "ArrowLeft", range)).toBe("2026-09-03");
+    expect(nextFocusDay("2026-09-03", "ArrowLeft", range)).toBe("2026-09-03"); // before the start
+    expect(nextFocusDay(TODAY, "ArrowDown", range)).toBe(TODAY); // no future days
+    expect(nextFocusDay("2026-09-10", "Enter", range)).toBe("2026-09-10");
   });
 });
