@@ -3,17 +3,17 @@ import "server-only";
 import type { Task } from "@/lib/task-rules";
 import { addTasks, completeTask, listForToday, removeTask, undoTask } from "@/lib/tasks";
 import { parseCommand } from "@/lib/telegram/commands";
-import { formatList, parseButton } from "@/lib/telegram/format";
+import { doneTasks, formatDoneList, formatList, openTasks, parseButton } from "@/lib/telegram/format";
 
 export const HELP_TEXT = [
   "Streak bot — your daily list.",
   "",
   "Just send a message to add it as a task (one task per line).",
   "",
-  "/list — today’s numbered list",
-  "/done 2 — mark task 2 done (also /done 1 3, /done 2-4, /done all)",
-  "/undo 2 — un-mark a task you completed today",
-  "/remove 2 — remove a task",
+  "/list — what’s left today, numbered (or tap a task’s button)",
+  "/done 2 — tick off task 2 (also /done 1 3, /done 2-4, /done all)",
+  "/remove 2 — remove task 2",
+  "/undo — see what you’ve ticked off today; /undo 2 unticks the 2nd",
   "/help — show this message",
 ].join("\n");
 
@@ -65,29 +65,33 @@ export async function handleMessage(text: string): Promise<BotReply> {
       const added = result.task.map((task) => `Added: ${task.title}`);
       return { text: [...added, "", formatList(day, tasks)].join("\n"), tasks };
     }
-    case "done":
-    case "undo":
-    case "remove": {
-      // Numbers always refer to the list as it is right now, the same order as /list.
+    case "undo": {
       const before = await listForToday();
-      const targets =
-        command.targets === "all"
-          ? before.tasks.flatMap((task, index) => (task.done_at ? [] : [index + 1]))
-          : command.targets;
+      const done = doneTasks(before.tasks);
+      // A bare /undo shows today's finished tasks with their own numbers.
+      if (command.targets === "list") return { text: formatDoneList(before.day, before.tasks) };
+      const lines = await applyByNumber(command.targets, done, undoTask, (task) => `Undone: ${task.title}`);
+      const after = await listForToday();
+      return { text: [...lines, "", formatList(after.day, after.tasks)].join("\n"), tasks: after.tasks };
+    }
+    case "done":
+    case "remove": {
+      // Numbers refer to what's left on the list right now, the same as /list and the buttons.
+      const before = await listForToday();
+      const open = openTasks(before.tasks);
+      const targets = command.targets === "all" ? open.map((_, index) => index + 1) : command.targets;
       if (targets.length === 0) return { text: "Everything on the list is already done. 🎉" };
 
       const lines =
         command.kind === "done"
-          ? await applyByNumber(targets, before.tasks, completeTask, (task) => `Done: ${task.title}`)
-          : command.kind === "undo"
-            ? await applyByNumber(targets, before.tasks, undoTask, (task) => `Undone: ${task.title}`)
-            : await applyByNumber(targets, before.tasks, removeTask, (task) =>
-                "removal" in task && task.removal === "drop"
-                  ? task.routine_id && task.task_date === before.day
-                    ? `Skipped for today: ${task.title}`
-                    : `Let go (kept on record): ${task.title}`
-                  : `Removed: ${task.title}`,
-              );
+          ? await applyByNumber(targets, open, completeTask, (task) => `Done: ${task.title}`)
+          : await applyByNumber(targets, open, removeTask, (task) =>
+              "removal" in task && task.removal === "drop"
+                ? task.routine_id && task.task_date === before.day
+                  ? `Skipped for today: ${task.title}`
+                  : `Let go (kept on record): ${task.title}`
+                : `Removed: ${task.title}`,
+            );
 
       const after = await listForToday();
       return { text: [...lines, "", formatList(after.day, after.tasks)].join("\n"), tasks: after.tasks };

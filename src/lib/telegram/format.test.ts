@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "@/lib/task-rules";
-import { formatList, formatMorningDigest, parseButton, taskButtons } from "@/lib/telegram/format";
+import { formatDoneList, formatList, formatMorningDigest, parseButton, taskButtons } from "@/lib/telegram/format";
 
 const TODAY = "2026-09-26"; // a Saturday
 
@@ -20,14 +20,46 @@ function task(overrides: Partial<Task> = {}): Task {
 }
 
 describe("formatList", () => {
-  it("numbers tasks, marks done ones, and labels carried-over tasks", () => {
+  it("lists only what's left, renumbered, and keeps the progress in the heading", () => {
     const text = formatList(TODAY, [
       task({ id: "a", title: "Renew passport", task_date: "2026-09-24" }),
       task({ id: "b", title: "Gym", done_at: "2026-09-26T05:00:00Z" }),
+      task({ id: "c", title: "Buy milk" }),
     ]);
-    expect(text).toContain("Sat 26 Sept — 1/2 done");
+    expect(text).toContain("Sat 26 Sept — 1/3 done");
     expect(text).toContain("1. ⬜ Renew passport (from Thu 24 Sept)");
-    expect(text).toContain("2. ✅ Gym");
+    expect(text).toContain("2. ⬜ Buy milk");
+    expect(text).not.toContain("Gym");
+    expect(text).toContain("✅ 1 done today — send /undo to see it.");
+  });
+
+  it("celebrates when everything is done", () => {
+    const text = formatList(TODAY, [task({ done_at: "2026-09-26T05:00:00Z" }), task({ id: "b", done_at: "2026-09-26T06:00:00Z" })]);
+    expect(text).toContain("2/2 done");
+    expect(text).toContain("Everything’s done for today 🎉");
+    expect(text).toContain("✅ 2 done today — send /undo to see them.");
+  });
+
+  it("has no done line when nothing is done yet", () => {
+    expect(formatList(TODAY, [task()])).not.toContain("done today");
+  });
+});
+
+describe("formatDoneList", () => {
+  it("numbers today's finished tasks for /undo", () => {
+    const text = formatDoneList(TODAY, [
+      task({ id: "a", title: "Buy milk" }),
+      task({ id: "b", title: "Gym", done_at: "2026-09-26T05:00:00Z" }),
+      task({ id: "c", title: "Call the bank", done_at: "2026-09-26T06:00:00Z" }),
+    ]);
+    expect(text).toContain("1. ✅ Gym");
+    expect(text).toContain("2. ✅ Call the bank");
+    expect(text).not.toContain("Buy milk");
+    expect(text).toContain("Send /undo 2 to untick one.");
+  });
+
+  it("says so when nothing is done yet", () => {
+    expect(formatDoneList(TODAY, [task()])).toBe("Nothing has been ticked off today yet.");
   });
 });
 
@@ -72,12 +104,12 @@ const ID_A = "0b2e7c1e-5d0a-4a57-9a8e-2f0d1c3b4a5f";
 const ID_B = "7f3c2a10-9b8e-4c6d-8e1f-0a2b3c4d5e6f";
 
 describe("taskButtons", () => {
-  it("only has buttons for unfinished tasks, keeping their list numbers", () => {
+  it("only has buttons for unfinished tasks, numbered like the list", () => {
     const keyboard = taskButtons([
       task({ id: ID_B, title: "Gym", done_at: "2026-09-26T05:00:00Z" }),
       task({ id: ID_A, title: "Buy milk" }),
     ]);
-    expect(keyboard).toEqual([[{ text: "⬜ 2. Buy milk", callback_data: `d:${ID_A}` }]]);
+    expect(keyboard).toEqual([[{ text: "⬜ 1. Buy milk", callback_data: `d:${ID_A}` }]]);
   });
 
   it("has no buttons once everything is done", () => {

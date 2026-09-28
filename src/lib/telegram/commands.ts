@@ -2,10 +2,11 @@
 //
 //   buy milk               → add "buy milk" (each line becomes its own task)
 //   /add buy milk          → same
-//   /list  or  /today      → show today's numbered list
-//   /done 2   /done 1 3    → mark tasks done by their list number
-//   /done all              → mark everything on the list done
-//   /undo 2                → un-mark a task completed today
+//   /list  or  /today      → show what's left today, numbered 1, 2, 3…
+//   /done 2   /done 1 3    → tick off tasks by their number in that list
+//   /done all              → tick off everything left
+//   /undo                  → show today's finished tasks, numbered
+//   /undo 2                → untick the 2nd of those
 //   /remove 2  (/delete)   → remove a task (earlier unfinished tasks are let go)
 //   /help  or  /start      → show these instructions
 
@@ -13,7 +14,7 @@ export type Command =
   | { kind: "add"; titles: string[] }
   | { kind: "list" }
   | { kind: "done"; targets: number[] | "all" }
-  | { kind: "undo"; targets: number[] }
+  | { kind: "undo"; targets: number[] | "list" }
   | { kind: "remove"; targets: number[] }
   | { kind: "help" }
   | { kind: "invalid"; message: string };
@@ -88,6 +89,7 @@ export function parseCommand(text: string): Command {
     case "undo":
     case "remove": {
       if (name === "done" && rest.toLowerCase() === "all") return { kind: "done", targets: "all" };
+      if (name === "undo" && rest === "") return { kind: "undo", targets: "list" };
       const targets = parseNumbers(rest);
       if (!targets) {
         return { kind: "invalid", message: `Use the number from /list, e.g. /${name} 2` };

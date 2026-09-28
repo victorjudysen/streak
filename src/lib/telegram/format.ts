@@ -5,18 +5,55 @@ import { isCarriedOver, type Task } from "@/lib/task-rules";
 
 const SHORT_DAY: Intl.DateTimeFormatOptions = { weekday: "short", day: "numeric", month: "short" };
 
+/** Tasks still to do, in list order. Their position here is their number in the bot. */
+export function openTasks(tasks: Task[]): Task[] {
+  return tasks.filter((task) => !task.done_at);
+}
+
+/** Tasks ticked off today, in list order. `/undo 2` refers to this numbering. */
+export function doneTasks(tasks: Task[]): Task[] {
+  return tasks.filter((task) => task.done_at);
+}
+
+function describe(task: Task, day: string): string {
+  const from = isCarriedOver(task, day) ? ` (from ${formatDay(task.task_date, SHORT_DAY)})` : "";
+  const routine = task.routine_id ? " 🔁" : "";
+  return `${task.title}${routine}${from}`;
+}
+
+/**
+ * Today's list as the bot shows it: only what's left to do, numbered 1, 2, 3…
+ * Finished tasks drop out (and the rest renumber); the heading keeps the progress.
+ */
 export function formatList(day: string, tasks: Task[]): string {
   const heading = formatDay(day, SHORT_DAY);
   if (tasks.length === 0) return `${heading} — nothing on the list yet.`;
 
-  const done = tasks.filter((task) => task.done_at).length;
-  const lines = tasks.map((task, index) => {
-    const mark = task.done_at ? "✅" : "⬜";
-    const from = isCarriedOver(task, day) ? ` (from ${formatDay(task.task_date, SHORT_DAY)})` : "";
-    const routine = task.routine_id ? " 🔁" : "";
-    return `${index + 1}. ${mark} ${task.title}${routine}${from}`;
-  });
-  return [`${heading} — ${done}/${tasks.length} done`, "", ...lines].join("\n");
+  const open = openTasks(tasks);
+  const done = tasks.length - open.length;
+  const lines = [`${heading} — ${done}/${tasks.length} done`, ""];
+  if (open.length === 0) {
+    lines.push("Everything’s done for today 🎉");
+  } else {
+    lines.push(...open.map((task, index) => `${index + 1}. ⬜ ${describe(task, day)}`));
+  }
+  if (done > 0) {
+    lines.push("", `✅ ${done} done today — send /undo to see ${done === 1 ? "it" : "them"}.`);
+  }
+  return lines.join("\n");
+}
+
+/** Reply to a bare /undo: today's finished tasks, numbered for `/undo 2`. */
+export function formatDoneList(day: string, tasks: Task[]): string {
+  const done = doneTasks(tasks);
+  if (done.length === 0) return "Nothing has been ticked off today yet.";
+  return [
+    "Done today:",
+    "",
+    ...done.map((task, index) => `${index + 1}. ✅ ${describe(task, day)}`),
+    "",
+    `Send /undo ${done.length === 1 ? "1" : "2"} to untick one.`,
+  ].join("\n");
 }
 
 /** The 9am message: today's list, including anything carried over. */
@@ -51,20 +88,16 @@ function shorten(title: string): string {
 }
 
 /**
- * One button per unfinished task: tapping it ticks the task off, and it drops out
- * of the buttons when the message refreshes. Buttons keep the task's number from
- * the full list above them, so `/done 3` and `/undo 7` still match. No buttons
- * once everything is done. `callback_data` is "d:<id>" (≤ 64 bytes); "u:<id>"
+ * One button per unfinished task, numbered like the list above it. Tapping one
+ * ticks the task off; when the message refreshes it drops out and the rest
+ * renumber. No buttons once everything is done. `callback_data` is "d:<id>" (≤ 64 bytes); "u:<id>"
  * (undo) is still accepted from older messages.
  */
 export function taskButtons(tasks: Task[]): InlineKeyboard | undefined {
-  const open = tasks
-    .map((task, index) => ({ task, number: index + 1 }))
-    .filter(({ task }) => !task.done_at)
-    .slice(0, MAX_BUTTONS);
+  const open = openTasks(tasks).slice(0, MAX_BUTTONS);
   if (open.length === 0) return undefined;
-  return open.map(({ task, number }) => [
-    { text: `⬜ ${number}. ${shorten(task.title)}`, callback_data: `d:${task.id}` },
+  return open.map((task, index) => [
+    { text: `⬜ ${index + 1}. ${shorten(task.title)}`, callback_data: `d:${task.id}` },
   ]);
 }
 

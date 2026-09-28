@@ -55,17 +55,20 @@ your own database and your own bot, and nobody else can see your list.
 
 ## The Telegram bot
 
+The bot’s list shows only what’s left to do, numbered 1, 2, 3…, with your
+progress in the heading (“4/8 done”). When you finish something it drops off and
+the rest renumber.
+
 | Message | What happens |
 | --- | --- |
 | `Call the bank` | Adds a task for today. Several lines add several tasks. |
-| `/list` | Today’s numbered list, with a tap button per task. |
+| `/list` | What’s left today, numbered, with a tap button per task. |
 | `/done 2` | Ticks off task 2. Also `/done 1 3`, `/done 2-4`, `/done all`. |
-| `/undo 2` | Unticks task 2, only if it was completed today. |
 | `/remove 2` | Deletes a task added today, or lets go of an older unfinished one. |
+| `/undo` | Shows what you’ve ticked off today, numbered. `/undo 2` unticks the 2nd. |
 
-Tap a task’s button under a list to tick it off. The message updates in place:
-the task gets a ✅ in the list and its button disappears, so the buttons only
-ever show what’s left to do. Tapped the wrong one? Send `/undo` with its number.
+Tap a task’s button to tick it off; the message updates in place. Numbers in a
+command always refer to the list as it was when you sent it.
 
 ## Run your own
 
