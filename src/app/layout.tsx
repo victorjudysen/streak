@@ -1,11 +1,32 @@
 import type { Metadata } from "next";
-import { DM_Mono, DM_Sans, Newsreader } from "next/font/google";
+import localFont from "next/font/local";
 import { sourceCodeUrl } from "@/lib/owner";
 import "./globals.css";
 
-const sans = DM_Sans({ subsets: ["latin"], variable: "--font-sans", weight: ["400", "500", "600", "700"] });
-const mono = DM_Mono({ subsets: ["latin"], variable: "--font-mono-face", weight: ["400", "500"] });
-const display = Newsreader({ subsets: ["latin"], variable: "--font-serif", weight: ["500", "600"], style: ["normal", "italic"] });
+// Fonts ship with the app (src/app/fonts, SIL Open Font License) instead of being
+// downloaded from Google Fonts at build time, so a Google outage can't fail a build.
+const dmSans = localFont({
+  src: [{ path: "./fonts/dm-sans-latin-wght-normal.woff2", weight: "100 1000", style: "normal" }],
+  variable: "--font-sans",
+  display: "swap",
+});
+const dmMono = localFont({
+  src: [
+    { path: "./fonts/dm-mono-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/dm-mono-latin-500-normal.woff2", weight: "500", style: "normal" },
+  ],
+  variable: "--font-mono-face",
+  display: "swap",
+});
+const newsreader = localFont({
+  src: [
+    { path: "./fonts/newsreader-latin-wght-normal.woff2", weight: "200 800", style: "normal" },
+    { path: "./fonts/newsreader-latin-wght-italic.woff2", weight: "200 800", style: "italic" },
+  ],
+  variable: "--font-serif",
+  display: "swap",
+  adjustFontFallback: "Times New Roman",
+});
 
 export const metadata: Metadata = {
   title: "Streak",
@@ -15,7 +36,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable} ${display.variable}`}>
+    <html lang="en" className={`${dmSans.variable} ${dmMono.variable} ${newsreader.variable}`}>
       <body>
         {children}
         <footer className="app-footer">

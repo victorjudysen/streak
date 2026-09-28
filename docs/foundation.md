@@ -8,6 +8,9 @@ It replaces the Laravel foundation.
 - **Next.js 16 App Router**, TypeScript, plain CSS (no Tailwind). Deployed as a
   Node app on Netlify (see `docs/self-hosting.md`; the maintainer's copy is
   described in `docs/thisuncle-deployment.md`).
+- **Fonts ship with the app.** DM Sans, DM Mono and Newsreader live in
+  `src/app/fonts/` (SIL Open Font License, licence files alongside) and load
+  through `next/font/local`, so builds never depend on reaching Google Fonts.
 - **One person per install.** `OWNER_NAME` personalises the header;
   `STREAK_TIMEZONE` (default UTC) decides "today". Licensed AGPL-3.0-or-later; the
   footer links to `SOURCE_CODE_URL`.
