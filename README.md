@@ -23,7 +23,8 @@ your own database and your own bot, and nobody else can see your list.
 - **Routines.** Tasks that repeat on chosen weekdays and appear on the list by
   themselves, each with its own streak.
 - **GitHub-style activity graph.** A year of completed tasks, shaded relative to
-  your other days, with a hover tooltip and a view per calendar year.
+  your other days, with a hover tooltip and a view per calendar year. Click a
+  day (or use the arrow keys and Enter) to see exactly what you finished then.
 - **Live updates.** Tick something off in Telegram and the open dashboard updates
   within a second.
 - **Honest records.** Past days are closed: a completion can’t be backfilled or
@@ -50,6 +51,8 @@ your own database and your own bot, and nobody else can see your list.
 - **The activity graph** works like GitHub’s contribution graph: Sunday-first
   weeks ending today, one square per day shaded by quartile of your active days
   (so one huge day doesn’t wash out the rest), and year buttons (`/?year=2025`).
+  Clicking a square lists that day’s completed tasks (`/?day=2026-06-30`),
+  read-only, with the time each was ticked off.
 - **Streaks and stats** are calculated only from real completion times.
 - **Editing** a Telegram message you already sent does nothing; send a new one.
 

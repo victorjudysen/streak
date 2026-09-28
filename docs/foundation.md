@@ -64,7 +64,10 @@ rendered for signed-in pages. New code that changes task data must go through
 range: `lastYearRange()` (53 Sunday-first week columns ending today) or
 `yearRange(year)`. Levels come from quartiles of the range's active days.
 `ActivityMap` renders it with fixed 10px cells, GitHub's colour tokens
-(`--map-*`), a tooltip and a Less → More legend. Queries that can return more
+(`--map-*`), a tooltip and a Less → More legend. Clicking a square (or Enter,
+with arrow-key navigation) sets `?day=`; the page then loads `completedOn(day)`
+server-side and `DayDetails` replaces the bottom cards. It uses the same
+local-day rule as `completionsByDay()`, so the list always matches the square. Queries that can return more
 than 1,000 rows must use `fetchAll()` (`src/lib/paging.ts`), because Supabase
 caps each request at 1,000 rows.
 
