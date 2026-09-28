@@ -51,6 +51,12 @@ describe("formatMorningDigest", () => {
     expect(text).toContain("Tap a task below to tick it off.");
   });
 
+  it("only invites tapping when something is left to do", () => {
+    const text = formatMorningDigest(TODAY, [task({ done_at: "2026-09-26T05:00:00Z" })]);
+    expect(text).toContain("0 tasks for today.");
+    expect(text).not.toContain("Tap a task");
+  });
+
   it("uses the singular for one task", () => {
     expect(formatMorningDigest(TODAY, [task()])).toContain("1 task for today.");
   });
@@ -66,15 +72,16 @@ const ID_A = "0b2e7c1e-5d0a-4a57-9a8e-2f0d1c3b4a5f";
 const ID_B = "7f3c2a10-9b8e-4c6d-8e1f-0a2b3c4d5e6f";
 
 describe("taskButtons", () => {
-  it("gives each task a numbered button: ⬜ to tick off, ✅ to untick", () => {
+  it("only has buttons for unfinished tasks, keeping their list numbers", () => {
     const keyboard = taskButtons([
-      task({ id: ID_A, title: "Buy milk" }),
       task({ id: ID_B, title: "Gym", done_at: "2026-09-26T05:00:00Z" }),
+      task({ id: ID_A, title: "Buy milk" }),
     ]);
-    expect(keyboard).toEqual([
-      [{ text: "⬜ 1. Buy milk", callback_data: `d:${ID_A}` }],
-      [{ text: "✅ 2. Gym", callback_data: `u:${ID_B}` }],
-    ]);
+    expect(keyboard).toEqual([[{ text: "⬜ 2. Buy milk", callback_data: `d:${ID_A}` }]]);
+  });
+
+  it("has no buttons once everything is done", () => {
+    expect(taskButtons([task({ id: ID_A, done_at: "2026-09-26T05:00:00Z" })])).toBeUndefined();
   });
 
   it("keeps callback data within Telegram's 64-byte limit and shortens long titles", () => {
