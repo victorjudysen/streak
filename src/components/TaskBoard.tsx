@@ -47,6 +47,51 @@ export function TaskBoard({ tasks }: { tasks: TaskView[] }) {
     });
   };
 
+  const open = optimistic.filter((task) => !task.done);
+  const done = optimistic.filter((task) => task.done);
+
+  const renderTask = (task: TaskView) => (
+    <li key={task.id} className={task.done ? "task is-complete" : "task"}>
+      <button
+        type="button"
+        className="task-check"
+        aria-pressed={task.done}
+        aria-label={task.done ? `Untick “${task.title}”` : `Tick off “${task.title}”`}
+        onClick={() =>
+          run({ id: task.id, type: "toggle", done: !task.done }, () => setTaskDoneAction(task.id, !task.done))
+        }
+      >
+        <span className="check-mark" aria-hidden="true">
+          {task.done ? "✓" : ""}
+        </span>
+        <span className="task-copy">
+          <strong>{task.title}</strong>
+          <small>
+            {task.carriedFrom ? <span className="carried">From {task.carriedFrom}</span> : null}
+            {task.isRoutine ? <span className="routine-tag">↻ Routine</span> : null}
+            {task.fromTelegram ? <span>via Telegram</span> : null}
+          </small>
+        </span>
+        <span className="task-time">{task.done ? (task.doneTime ?? "Now") : "—"}</span>
+      </button>
+      <button
+        type="button"
+        className="task-remove"
+        aria-label={
+          task.carriedFrom
+            ? `Let go of “${task.title}”`
+            : task.isRoutine
+              ? `Skip “${task.title}” today`
+              : `Remove “${task.title}”`
+        }
+        title={task.carriedFrom ? "Let go (kept on record)" : task.isRoutine ? "Skip today" : "Remove"}
+        onClick={() => run({ id: task.id, type: "remove" }, () => removeTaskAction(task.id))}
+      >
+        ×
+      </button>
+    </li>
+  );
+
   const doneCount = optimistic.filter((task) => task.done).length;
   const percent = optimistic.length ? Math.round((doneCount / optimistic.length) * 100) : 0;
   const message = error ?? addState.error;
@@ -93,50 +138,22 @@ export function TaskBoard({ tasks }: { tasks: TaskView[] }) {
         {optimistic.length === 0 ? (
           <p className="empty-state">Nothing on the list yet. Add a task above, or message the Telegram bot.</p>
         ) : (
-          <ul className="task-list">
-            {optimistic.map((task) => (
-              <li key={task.id} className={task.done ? "task is-complete" : "task"}>
-                <button
-                  type="button"
-                  className="task-check"
-                  aria-pressed={task.done}
-                  onClick={() =>
-                    run({ id: task.id, type: "toggle", done: !task.done }, () =>
-                      setTaskDoneAction(task.id, !task.done),
-                    )
-                  }
-                >
-                  <span className="check-mark" aria-hidden="true">
-                    {task.done ? "✓" : ""}
-                  </span>
-                  <span className="task-copy">
-                    <strong>{task.title}</strong>
-                    <small>
-                      {task.carriedFrom ? <span className="carried">From {task.carriedFrom}</span> : null}
-                      {task.isRoutine ? <span className="routine-tag">↻ Routine</span> : null}
-                      {task.fromTelegram ? <span>via Telegram</span> : null}
-                    </small>
-                  </span>
-                  <span className="task-time">{task.done ? (task.doneTime ?? "Now") : "—"}</span>
-                </button>
-                <button
-                  type="button"
-                  className="task-remove"
-                  aria-label={
-                    task.carriedFrom
-                      ? `Let go of “${task.title}”`
-                      : task.isRoutine
-                        ? `Skip “${task.title}” today`
-                        : `Remove “${task.title}”`
-                  }
-                  title={task.carriedFrom ? "Let go (kept on record)" : task.isRoutine ? "Skip today" : "Remove"}
-                  onClick={() => run({ id: task.id, type: "remove" }, () => removeTaskAction(task.id))}
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
+          <>
+            {open.length === 0 ? (
+              <p className="empty-state">Everything’s done for today 🎉</p>
+            ) : (
+              <ul className="task-list">{open.map(renderTask)}</ul>
+            )}
+            {done.length > 0 ? (
+              // Finished tasks leave the list; they're here to review or untick.
+              <details className="done-section">
+                <summary>
+                  Done today <span>({done.length})</span>
+                </summary>
+                <ul className="task-list">{done.map(renderTask)}</ul>
+              </details>
+            ) : null}
+          </>
         )}
       </div>
     </>

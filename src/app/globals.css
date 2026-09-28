@@ -164,6 +164,13 @@ h2 { font-size: 1.75rem; }
 .live-status.is-live i { background: var(--moss-700); animation: live-pulse 2s ease-in-out infinite; }
 .live-status.is-offline i { background: var(--clay); }
 @keyframes live-pulse { 50% { opacity: .35; } }
+.done-section { margin-top: 14px; }
+.done-section summary { display: flex; align-items: center; gap: 6px; padding: 8px 2px; color: var(--color-muted); font: 500 .62rem var(--font-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; list-style: none; }
+.done-section summary::-webkit-details-marker { display: none; }
+.done-section summary::before { content: "▸"; transition: transform 150ms ease; }
+.done-section[open] summary::before { transform: rotate(90deg); }
+.done-section summary span { color: var(--color-accent); }
+.done-section summary:focus-visible { outline: 0; box-shadow: var(--focus-ring); }
 .empty-state { margin: 18px 0 0; color: var(--color-muted); font-size: .78rem; }
 
 /* Record */

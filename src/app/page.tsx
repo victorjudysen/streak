@@ -213,16 +213,16 @@ export default async function Dashboard({
             <code>buy milk</code> add a task
           </li>
           <li>
-            <code>/list</code> see today, numbered
+            <code>/list</code> what’s left, numbered
           </li>
           <li>
             <code>/done 2</code> tick off task 2
           </li>
           <li>
-            <code>/undo 2</code> untick (today only)
+            <code>/remove 2</code> take it off the list
           </li>
           <li>
-            <code>/remove 2</code> take it off the list
+            <code>/undo</code> see and untick today’s done tasks
           </li>
         </ul>
       </section>

@@ -14,8 +14,10 @@ your own database and your own bot, and nobody else can see your list.
 
 ## Features
 
-- **Daily list.** Add, tick off and remove tasks. Unfinished tasks carry over to
-  the next day, labelled with the day they came from.
+- **Daily list.** Add, tick off and remove tasks. Ticked-off tasks leave the list
+  and wait in a folded “Done today” section, where you can untick a mis-tap.
+  Unfinished tasks carry over to the next day, labelled with the day they came
+  from.
 - **Telegram bot.** Send a message to add a task, tap a button to tick it off,
   or use `/list`, `/done 2`, `/undo 2` and `/remove 2`. Only your chat can use it.
 - **Morning message.** Every day at 9am your time, the bot sends today’s list
