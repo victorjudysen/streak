@@ -40,7 +40,7 @@ await call("setMyCommands", {
   commands: [
     { command: "list", description: "Today’s numbered list" },
     { command: "done", description: "Tick off tasks, e.g. /done 2" },
-    { command: "undo", description: "Untick a task done today, e.g. /undo 2" },
+    { command: "undo", description: "See today’s done tasks; /undo 2 unticks one" },
     { command: "remove", description: "Take a task off the list, e.g. /remove 2" },
     { command: "help", description: "How to use this bot" },
   ],

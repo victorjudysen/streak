@@ -24,6 +24,7 @@ describe("parseCommand", () => {
     expect(parseCommand("/done 1 3")).toEqual({ kind: "done", targets: [1, 3] });
     expect(parseCommand("/done all")).toEqual({ kind: "done", targets: "all" });
     expect(parseCommand("/undo 2")).toEqual({ kind: "undo", targets: [2] });
+    expect(parseCommand("/undo")).toEqual({ kind: "undo", targets: "list" });
     expect(parseCommand("/delete 4")).toEqual({ kind: "remove", targets: [4] });
   });
 
