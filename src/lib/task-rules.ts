@@ -62,9 +62,10 @@ export function isCarriedOver(task: Task, day: string): boolean {
 
 export type Decision<T extends string> = { action: T } | { error: string };
 
-export function decideComplete(task: Task): Decision<"complete"> {
+export function decideComplete(task: Task, day: string): Decision<"complete"> {
   if (task.dropped_at) return { error: "That task was let go." };
   if (task.done_at) return { error: "Already done." };
+  if (task.task_date > day) return { error: "That task is planned for a later day. Move it to today first." };
   return { action: "complete" };
 }
 
@@ -88,7 +89,8 @@ export function decideRemove(task: Task, day: string, zone?: string): Decision<"
     return task.done_at ? { error: "Undo it first, then skip it." } : { action: "drop" };
   }
   if (task.task_date === day) return { action: "delete" };
-  if (task.task_date > day) return { error: "That task is planned for a later day." };
+  // A task planned for a later day hasn't happened yet, so it can simply be deleted.
+  if (task.task_date > day) return task.done_at ? { error: "Undo it first, then remove it." } : { action: "delete" };
   if (task.done_at) {
     return localDate(task.done_at, zone) === day
       ? { error: "Undo it first, then remove it." }

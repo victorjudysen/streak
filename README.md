@@ -20,6 +20,9 @@ your own database and your own bot, and nobody else can see your list.
   from.
 - **Telegram bot.** Send a message to add a task, tap a button to tick it off,
   or use `/list`, `/done 2`, `/undo 2` and `/remove 2`. Only your chat can use it.
+- **Plan ahead.** Schedule a task for any day in the next year, from the app’s
+  date picker or by starting a Telegram message with a day (`fri: Gym`). It
+  waits in a folded “Upcoming” section and appears on the list that morning.
 - **Morning message.** Every day at 9am your time, the bot sends today’s list
   with a tap button per task.
 - **Routines.** Tasks that repeat on chosen weekdays and appear on the list by
@@ -71,6 +74,8 @@ the rest renumber.
 | `/done 2` | Ticks off task 2. Also `/done 1 3`, `/done 2-4`, `/done all`. |
 | `/remove 2` | Deletes a task added today, or lets go of an older unfinished one. |
 | `/undo` | Shows what you’ve ticked off today, numbered. `/undo 2` unticks the 2nd. |
+| `tomorrow: Call the bank` | Schedules a task for another day. Also `fri: …`, `12 oct: …`, `2026-10-12: …`, or `/add fri: …`. Text before a colon only counts if it’s a day. |
+| `/upcoming` | What’s scheduled for later days. |
 
 Tap a task’s button to tick it off; the message updates in place. Numbers in a
 command always refer to the list as it was when you sent it.

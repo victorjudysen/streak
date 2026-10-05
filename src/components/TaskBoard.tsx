@@ -17,9 +17,35 @@ export interface TaskView {
   isRoutine: boolean;
 }
 
+/** A task planned for a later day. */
+export interface UpcomingView {
+  id: string;
+  title: string;
+  /** ISO day, e.g. "2026-10-09". */
+  day: string;
+  /** "Tomorrow", "Fri 9 Oct". */
+  dayLabel: string;
+}
+
 type Change = { id: string; type: "toggle"; done: boolean } | { id: string; type: "remove" };
 
-export function TaskBoard({ tasks }: { tasks: TaskView[] }) {
+export function TaskBoard({
+  tasks,
+  upcoming,
+  today,
+  lastDay,
+}: {
+  tasks: TaskView[];
+  upcoming: UpcomingView[];
+  /** Today's ISO date, the earliest day a task can be added for. */
+  today: string;
+  /** The latest day a task can be scheduled for. */
+  lastDay: string;
+}) {
+  const [day, setDay] = useState(today);
+  const [optimisticUpcoming, removeUpcoming] = useOptimistic(upcoming, (current, id: string) =>
+    current.filter((task) => task.id !== id),
+  );
   const [addState, addAction, adding] = useActionState<FormState, FormData>(addTaskAction, {});
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -46,6 +72,23 @@ export function TaskBoard({ tasks }: { tasks: TaskView[] }) {
       if (result.error) setError(result.error);
     });
   };
+
+  const removeScheduled = (id: string) => {
+    setError(null);
+    startTransition(async () => {
+      removeUpcoming(id);
+      const result = await removeTaskAction(id);
+      if (result.error) setError(result.error);
+    });
+  };
+
+  // Upcoming tasks grouped by day, in date order.
+  const upcomingDays: { day: string; label: string; tasks: UpcomingView[] }[] = [];
+  for (const task of optimisticUpcoming) {
+    const group = upcomingDays.at(-1);
+    if (group?.day === task.day) group.tasks.push(task);
+    else upcomingDays.push({ day: task.day, label: task.dayLabel, tasks: [task] });
+  }
 
   const open = optimistic.filter((task) => !task.done);
   const done = optimistic.filter((task) => task.done);
@@ -108,7 +151,7 @@ export function TaskBoard({ tasks }: { tasks: TaskView[] }) {
           name="title"
           type="text"
           autoComplete="off"
-          placeholder="Add a task for today…"
+          placeholder={day === today ? "Add a task for today…" : "Add a task for that day…"}
           maxLength={MAX_TITLE_LENGTH}
           required
           disabled={adding}
@@ -116,6 +159,27 @@ export function TaskBoard({ tasks }: { tasks: TaskView[] }) {
         <button type="submit" aria-label="Add task" disabled={adding}>
           +
         </button>
+        <div className={day === today ? "add-day" : "add-day is-later"}>
+          <label htmlFor="new-task-day">For</label>
+          <input
+            id="new-task-day"
+            name="day"
+            type="date"
+            value={day}
+            min={today}
+            max={lastDay}
+            required
+            disabled={adding}
+            onChange={(event) => setDay(event.target.value || today)}
+          />
+          {day === today ? (
+            <span className="add-day-note">today</span>
+          ) : (
+            <button type="button" className="text-button" onClick={() => setDay(today)}>
+              back to today
+            </button>
+          )}
+        </div>
       </form>
 
       <div className="score-block" aria-live="polite" aria-atomic="true">
@@ -130,31 +194,57 @@ export function TaskBoard({ tasks }: { tasks: TaskView[] }) {
         </div>
       </div>
 
-      <p className="form-message" role="alert">
-        {message}
+      <p className={!message && addState.success ? "form-message is-success" : "form-message"} role="alert">
+        {message ?? addState.success}
       </p>
 
       <div className="task-scroll" aria-label="Today’s tasks">
         {optimistic.length === 0 ? (
           <p className="empty-state">Nothing on the list yet. Add a task above, or message the Telegram bot.</p>
+        ) : open.length === 0 ? (
+          <p className="empty-state">Everything’s done for today 🎉</p>
         ) : (
-          <>
-            {open.length === 0 ? (
-              <p className="empty-state">Everything’s done for today 🎉</p>
-            ) : (
-              <ul className="task-list">{open.map(renderTask)}</ul>
-            )}
-            {done.length > 0 ? (
-              // Finished tasks leave the list; they're here to review or untick.
-              <details className="done-section">
-                <summary>
-                  Done today <span>({done.length})</span>
-                </summary>
-                <ul className="task-list">{done.map(renderTask)}</ul>
-              </details>
-            ) : null}
-          </>
+          <ul className="task-list">{open.map(renderTask)}</ul>
         )}
+        {upcomingDays.length > 0 ? (
+          <details className="done-section upcoming-section">
+            <summary>
+              Upcoming <span>({optimisticUpcoming.length})</span>
+            </summary>
+            {upcomingDays.map((group) => (
+              <div key={group.day} className="upcoming-day">
+                <p className="upcoming-label">{group.label}</p>
+                <ul className="task-list">
+                  {group.tasks.map((task) => (
+                    <li key={task.id} className="task is-upcoming">
+                      <span className="task-copy">
+                        <strong>{task.title}</strong>
+                      </span>
+                      <button
+                        type="button"
+                        className="task-remove"
+                        aria-label={`Remove “${task.title}” from ${group.label}`}
+                        title="Remove"
+                        onClick={() => removeScheduled(task.id)}
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </details>
+        ) : null}
+        {done.length > 0 ? (
+          // Finished tasks leave the list; they're here to review or untick.
+          <details className="done-section">
+            <summary>
+              Done today <span>({done.length})</span>
+            </summary>
+            <ul className="task-list">{done.map(renderTask)}</ul>
+          </details>
+        ) : null}
       </div>
     </>
   );

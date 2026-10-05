@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth";
+import { today } from "@/lib/dates";
+import { describeScheduleDay } from "@/lib/day-words";
 import { changePassword, checkPassword } from "@/lib/credentials";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken } from "@/lib/session";
 import { parseWeekdays } from "@/lib/routine-rules";
@@ -58,10 +60,13 @@ export async function signOut(): Promise<void> {
 
 export async function addTaskAction(_previous: FormState, formData: FormData): Promise<FormState> {
   await requireSession();
-  const result = await addTasks([String(formData.get("title") ?? "")], "app");
+  const day = String(formData.get("day") ?? "").trim() || null;
+  const result = await addTasks([{ title: String(formData.get("title") ?? ""), day }], "app");
   if (!result.ok) return { error: result.error };
   revalidatePath("/");
-  return {};
+  const [task] = result.task;
+  const now = today();
+  return task && task.task_date !== now ? { success: `Scheduled for ${describeScheduleDay(task.task_date, now)}.` } : {};
 }
 
 export async function setTaskDoneAction(id: string, done: boolean): Promise<FormState> {

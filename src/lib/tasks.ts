@@ -1,6 +1,7 @@
 import "server-only";
 
 import { addDays, localDate, timeZone, today } from "@/lib/dates";
+import { checkScheduleDay } from "@/lib/day-words";
 import { broadcastTasksChanged } from "@/lib/realtime";
 import { fetchAll } from "@/lib/paging";
 import { db } from "@/lib/supabase";
@@ -72,20 +73,25 @@ export async function listForToday(): Promise<{ day: string; tasks: Task[] }> {
   return { day, tasks: sortTasks(rows.filter((task) => isOnList(task, day))) };
 }
 
-export async function addTasks(rawTitles: string[], source: TaskSource): Promise<Result<Task[]>> {
-  const titles: string[] = [];
-  for (const raw of rawTitles) {
-    const checked = validateTitle(raw);
-    if ("error" in checked) return { ok: false, error: checked.error };
-    titles.push(checked.title);
-  }
-  if (titles.length === 0) return { ok: false, error: "Write something first." };
+/** A task to add: its title, and the day it's for (today when omitted). */
+export interface NewTask {
+  title: string;
+  day?: string | null;
+}
 
-  const day = today();
-  const { data, error } = await db()
-    .from("tasks")
-    .insert(titles.map((title) => ({ title, task_date: day, source })))
-    .select(COLUMNS);
+export async function addTasks(items: NewTask[], source: TaskSource): Promise<Result<Task[]>> {
+  const now = today();
+  const rows: { title: string; task_date: string; source: TaskSource }[] = [];
+  for (const item of items) {
+    const checked = validateTitle(item.title);
+    if ("error" in checked) return { ok: false, error: checked.error };
+    const when = checkScheduleDay(item.day ?? now, now);
+    if ("error" in when) return { ok: false, error: when.error };
+    rows.push({ title: checked.title, task_date: when.day, source });
+  }
+  if (rows.length === 0) return { ok: false, error: "Write something first." };
+
+  const { data, error } = await db().from("tasks").insert(rows).select(COLUMNS);
 
   if (error) return { ok: false, error: `Could not save: ${error.message}` };
   await broadcastTasksChanged();
@@ -113,7 +119,7 @@ async function patch(id: string, values: Partial<Task>): Promise<Result> {
 export async function completeTask(id: string): Promise<Result> {
   const task = await find(id);
   if (!task) return { ok: false, error: "That task no longer exists." };
-  const decision = decideComplete(task);
+  const decision = decideComplete(task, today());
   if ("error" in decision) return { ok: false, error: decision.error };
   return patch(id, { done_at: new Date().toISOString() });
 }
@@ -141,6 +147,25 @@ export async function removeTask(id: string): Promise<Result<Task & { removal: "
   if (error) return { ok: false, error: `Could not remove: ${error.message}` };
   await broadcastTasksChanged();
   return { ok: true, task: { ...task, removal: "delete" } };
+}
+
+/** Unfinished tasks planned for later days, soonest first. */
+export async function listUpcoming(): Promise<Task[]> {
+  const day = today();
+  const rows = await fetchAll<Task>((start, end) =>
+    db()
+      .from("tasks")
+      .select(COLUMNS)
+      .gt("task_date", day)
+      .is("done_at", null)
+      .is("dropped_at", null)
+      .order("task_date")
+      .order("seq")
+      .range(start, end),
+  ).catch((error: Error) => {
+    throw new Error(`Could not load upcoming tasks: ${error.message}`);
+  });
+  return rows;
 }
 
 /** Number of tasks completed on each local day, from `since` (inclusive) to today. */

@@ -132,6 +132,12 @@ h2 { font-size: 1.75rem; }
 .add-form input::placeholder { color: var(--color-muted); }
 .add-form button { border: 0; border-radius: 2px; background: var(--ink-950); color: var(--white); font-size: 1.3rem; line-height: 1; }
 .add-form button:hover:not(:disabled) { background: var(--color-accent-strong); }
+.add-day { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: var(--color-muted); font-size: .7rem; }
+.add-day label { font: 500 .6rem var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.add-day input { min-height: 30px; padding: 3px 8px; border: 1px solid var(--color-border); border-radius: 2px; background: var(--white); color: var(--color-text); font: .72rem var(--font-body); }
+.add-day input:focus-visible { outline: 0; box-shadow: var(--focus-ring); }
+.add-day.is-later input { border-color: var(--color-accent); color: var(--color-accent-strong); font-weight: 600; }
+.add-day .text-button { min-height: auto; padding: 2px 0; background: transparent; color: var(--color-muted); font-size: .68rem; }
 .score-block { padding: 14px 0 12px; border-bottom: 1px solid var(--color-border); }
 .score-copy { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .score-copy strong { font: 500 1.7rem var(--font-display); }
@@ -171,6 +177,10 @@ h2 { font-size: 1.75rem; }
 .done-section[open] summary::before { transform: rotate(90deg); }
 .done-section summary span { color: var(--color-accent); }
 .done-section summary:focus-visible { outline: 0; box-shadow: var(--focus-ring); }
+.upcoming-day { margin-bottom: 6px; }
+.upcoming-label { margin: 6px 0 0; color: var(--color-accent-strong); font: 600 .66rem var(--font-body); }
+.task.is-upcoming { min-height: 44px; padding-left: 4px; }
+.task.is-upcoming .task-copy strong { font-weight: 400; }
 .empty-state { margin: 18px 0 0; color: var(--color-muted); font-size: .78rem; }
 
 /* Record */

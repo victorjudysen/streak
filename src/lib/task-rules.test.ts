@@ -84,8 +84,14 @@ describe("closed days stay closed", () => {
     expect(decideRemove(task({ task_date: "2026-09-21", done_at: "2026-09-22T09:00:00Z" }), TODAY, ZONE)).toHaveProperty("error");
   });
   it("does not complete a task twice", () => {
-    expect(decideComplete(task({ done_at: "2026-09-24T09:00:00Z" }))).toHaveProperty("error");
-    expect(decideComplete(task())).toEqual({ action: "complete" });
+    expect(decideComplete(task({ done_at: "2026-09-24T09:00:00Z" }), TODAY)).toHaveProperty("error");
+    expect(decideComplete(task(), TODAY)).toEqual({ action: "complete" });
+  });
+  it("doesn't tick off a task planned for a later day", () => {
+    expect(decideComplete(task({ task_date: "2026-09-30" }), TODAY)).toHaveProperty("error");
+  });
+  it("deletes a task planned for a later day outright", () => {
+    expect(decideRemove(task({ task_date: "2026-09-30" }), TODAY, ZONE)).toEqual({ action: "delete" });
   });
 });
 

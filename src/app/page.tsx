@@ -8,7 +8,7 @@ import { SetupNotice } from "@/components/SetupNotice";
 import { TaskBoard, type TaskView } from "@/components/TaskBoard";
 import { requirePageSession } from "@/lib/auth";
 import { isConfigured, missingEnv } from "@/lib/config";
-import { formatDay, formatTime, localDate } from "@/lib/dates";
+import { addDays, formatDay, formatTime, localDate } from "@/lib/dates";
 import { TASKS_CHANGED_EVENT, realtimeTopic } from "@/lib/realtime";
 import {
   buildCalendar,
@@ -21,7 +21,8 @@ import {
   yearRange,
 } from "@/lib/stats";
 import { isCarriedOver } from "@/lib/task-rules";
-import { completedOn, completionsByDay, firstCompletionYear, listForToday } from "@/lib/tasks";
+import { completedOn, completionsByDay, firstCompletionYear, listForToday, listUpcoming } from "@/lib/tasks";
+import { MAX_DAYS_AHEAD, describeScheduleDay } from "@/lib/day-words";
 
 const WEEK_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -42,6 +43,12 @@ export default async function Dashboard({
   }
 
   const { day, tasks } = await listForToday();
+  const upcoming = (await listUpcoming()).map((task) => ({
+    id: task.id,
+    title: task.title,
+    day: task.task_date,
+    dayLabel: describeScheduleDay(task.task_date, day),
+  }));
   const currentYear = Number(day.slice(0, 4));
   const firstYear = (await firstCompletionYear()) ?? currentYear;
   const years = Array.from({ length: currentYear - firstYear + 1 }, (_, i) => currentYear - i);
@@ -108,7 +115,7 @@ export default async function Dashboard({
         </div>
         {live}
       </div>
-      <TaskBoard tasks={views} />
+      <TaskBoard tasks={views} upcoming={upcoming} today={day} lastDay={addDays(day, MAX_DAYS_AHEAD)} />
     </section>
   );
 
@@ -223,6 +230,12 @@ export default async function Dashboard({
           </li>
           <li>
             <code>/undo</code> see and untick today’s done tasks
+          </li>
+          <li>
+            <code>fri: Gym</code> plan for another day
+          </li>
+          <li>
+            <code>/upcoming</code> what’s scheduled
           </li>
         </ul>
       </section>

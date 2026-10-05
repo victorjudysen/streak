@@ -1,6 +1,7 @@
 // Plain-text messages the bot sends. Pure functions only, so they are easy to test.
 
 import { formatDay } from "@/lib/dates";
+import { describeScheduleDay } from "@/lib/day-words";
 import { isCarriedOver, type Task } from "@/lib/task-rules";
 
 const SHORT_DAY: Intl.DateTimeFormatOptions = { weekday: "short", day: "numeric", month: "short" };
@@ -39,6 +40,23 @@ export function formatList(day: string, tasks: Task[]): string {
   }
   if (done > 0) {
     lines.push("", `✅ ${done} done today — send /undo to see ${done === 1 ? "it" : "them"}.`);
+  }
+  return lines.join("\n");
+}
+
+/** Reply to /upcoming: unfinished tasks for later days, grouped by day. */
+export function formatUpcoming(today: string, tasks: Task[]): string {
+  if (tasks.length === 0) {
+    return "Nothing scheduled yet. Start a message with a day to plan ahead, e.g. “tomorrow: Call the bank”.";
+  }
+  const lines = ["Coming up:"];
+  let current = "";
+  for (const task of tasks) {
+    if (task.task_date !== current) {
+      current = task.task_date;
+      lines.push("", describeScheduleDay(current, today));
+    }
+    lines.push(`• ${task.title}`);
   }
   return lines.join("\n");
 }
