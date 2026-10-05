@@ -21,6 +21,8 @@ describe("parseCommand", () => {
   it("understands list, done, undo and remove", () => {
     expect(parseCommand("/list")).toEqual({ kind: "list" });
     expect(parseCommand("/today")).toEqual({ kind: "list" });
+    expect(parseCommand("/upcoming")).toEqual({ kind: "upcoming" });
+    expect(parseCommand("/later")).toEqual({ kind: "upcoming" });
     expect(parseCommand("/done 1 3")).toEqual({ kind: "done", targets: [1, 3] });
     expect(parseCommand("/done all")).toEqual({ kind: "done", targets: "all" });
     expect(parseCommand("/undo 2")).toEqual({ kind: "undo", targets: [2] });

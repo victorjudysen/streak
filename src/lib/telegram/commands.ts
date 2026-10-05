@@ -7,19 +7,25 @@
 //   /done all              → tick off everything left
 //   /undo                  → show today's finished tasks, numbered
 //   /undo 2                → untick the 2nd of those
+//   /upcoming  (/later)    → tasks scheduled for later days
+//   tomorrow: Call the bank → add for another day (also "fri:", "12 oct:", "/add tomorrow: …")
 //   /remove 2  (/delete)   → remove a task (earlier unfinished tasks are let go)
 //   /help  or  /start      → show these instructions
 
 export type Command =
   | { kind: "add"; titles: string[] }
   | { kind: "list" }
+  | { kind: "upcoming" }
   | { kind: "done"; targets: number[] | "all" }
   | { kind: "undo"; targets: number[] | "list" }
   | { kind: "remove"; targets: number[] }
   | { kind: "help" }
   | { kind: "invalid"; message: string };
 
-const ALIASES: Record<string, "add" | "list" | "done" | "undo" | "remove" | "help"> = {
+const ALIASES: Record<string, "add" | "list" | "upcoming" | "done" | "undo" | "remove" | "help"> = {
+  upcoming: "upcoming",
+  later: "upcoming",
+  scheduled: "upcoming",
   add: "add",
   list: "list",
   today: "list",
@@ -79,6 +85,8 @@ export function parseCommand(text: string): Command {
       return { kind: "help" };
     case "list":
       return { kind: "list" };
+    case "upcoming":
+      return { kind: "upcoming" };
     case "add": {
       const titles = splitLines(rest);
       return titles.length

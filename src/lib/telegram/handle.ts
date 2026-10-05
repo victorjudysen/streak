@@ -1,9 +1,11 @@
 import "server-only";
 
 import type { Task } from "@/lib/task-rules";
-import { addTasks, completeTask, listForToday, removeTask, undoTask } from "@/lib/tasks";
+import { today } from "@/lib/dates";
+import { describeScheduleDay, splitDatePrefix } from "@/lib/day-words";
+import { addTasks, completeTask, listForToday, listUpcoming, removeTask, undoTask } from "@/lib/tasks";
 import { parseCommand } from "@/lib/telegram/commands";
-import { doneTasks, formatDoneList, formatList, openTasks, parseButton } from "@/lib/telegram/format";
+import { doneTasks, formatDoneList, formatList, formatUpcoming, openTasks, parseButton } from "@/lib/telegram/format";
 
 export const HELP_TEXT = [
   "Streak bot — your daily list.",
@@ -14,6 +16,9 @@ export const HELP_TEXT = [
   "/done 2 — tick off task 2 (also /done 1 3, /done 2-4, /done all)",
   "/remove 2 — remove task 2",
   "/undo — see what you’ve ticked off today; /undo 2 unticks the 2nd",
+  "",
+  "Plan ahead by starting with a day: “tomorrow: Call the bank”, “fri: Gym”, “12 oct: Dentist”.",
+  "/upcoming — what’s scheduled for later days",
   "/help — show this message",
 ].join("\n");
 
@@ -59,12 +64,18 @@ export async function handleMessage(text: string): Promise<BotReply> {
       return { text: formatList(day, tasks), tasks };
     }
     case "add": {
-      const result = await addTasks(command.titles, "telegram");
+      // "tomorrow: Call the bank" schedules a line for another day.
+      const now = today();
+      const result = await addTasks(command.titles.map((line) => splitDatePrefix(line, now)), "telegram");
       if (!result.ok) return { text: `Nothing was added. ${result.error}` };
       const { day, tasks } = await listForToday();
-      const added = result.task.map((task) => `Added: ${task.title}`);
+      const added = result.task.map((task) =>
+        task.task_date === day ? `Added: ${task.title}` : `Scheduled for ${describeScheduleDay(task.task_date, day)}: ${task.title}`,
+      );
       return { text: [...added, "", formatList(day, tasks)].join("\n"), tasks };
     }
+    case "upcoming":
+      return { text: formatUpcoming(today(), await listUpcoming()) };
     case "undo": {
       const before = await listForToday();
       const done = doneTasks(before.tasks);

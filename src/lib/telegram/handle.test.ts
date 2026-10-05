@@ -5,17 +5,22 @@ import type { Task } from "@/lib/task-rules";
 // numbers in commands always match the list the bot last showed.
 
 vi.mock("server-only", () => ({}));
+// Pin "today" so scheduled days are predictable.
+vi.mock("@/lib/dates", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/dates")>()),
+  today: () => "2026-09-28",
+}));
 
 const DAY = "2026-09-28";
 let store: Task[] = [];
 
-function make(title: string, done = false): Task {
+function make(title: string, done = false, day = DAY): Task {
   const seq = store.length + 1;
   return {
     id: `00000000-0000-4000-8000-${String(seq).padStart(12, "0")}`,
     seq,
     title,
-    task_date: DAY,
+    task_date: day,
     done_at: done ? "2026-09-28T06:00:00Z" : null,
     dropped_at: null,
     source: "telegram",
@@ -27,10 +32,15 @@ function make(title: string, done = false): Task {
 const found = (id: string) => store.find((task) => task.id === id);
 
 vi.mock("@/lib/tasks", () => ({
-  listForToday: async () => ({ day: DAY, tasks: store.filter((task) => !task.dropped_at) }),
-  addTasks: async (titles: string[]) => {
-    const added = titles.map((title) => make(title));
-    store.push(...added);
+  listForToday: async () => ({ day: DAY, tasks: store.filter((task) => !task.dropped_at && task.task_date <= DAY) }),
+  listUpcoming: async () => store.filter((task) => task.task_date > DAY && !task.done_at && !task.dropped_at),
+  addTasks: async (items: { title: string; day?: string | null }[]) => {
+    const added: Task[] = [];
+    for (const item of items) {
+      const task = make(item.title, false, item.day ?? DAY);
+      store.push(task);
+      added.push(task);
+    }
     return { ok: true, task: added };
   },
   completeTask: async (id: string) => {
@@ -132,5 +142,32 @@ describe("buttons", () => {
     expect(notice).toBe("Done: Walkthrough doc");
     expect(text).not.toContain("Walkthrough doc");
     expect(text).toContain("2. ⬜ Announcements");
+  });
+});
+
+describe("scheduling ahead", () => {
+  it("a day before a colon schedules the task; it stays off today's list", async () => {
+    const { text } = await handleMessage("tomorrow: Call the bank");
+    expect(text).toContain("Scheduled for Tomorrow: Call the bank");
+    expect(text).not.toContain("⬜ Call the bank");
+    expect(store.find((task) => task.title === "Call the bank")?.task_date).toBe("2026-09-29");
+  });
+
+  it("works per line, with /add too, and leaves other colons alone", async () => {
+    const { text } = await handleMessage("/add fri: Gym\nNote: buy milk");
+    expect(text).toContain("Scheduled for Fri 2 Oct: Gym");
+    expect(text).toContain("Added: Note: buy milk");
+  });
+
+  it("/upcoming lists what's scheduled, grouped by day", async () => {
+    await handleMessage("tomorrow: Call the bank\n12 oct: Dentist");
+    const { text } = await handleMessage("/upcoming");
+    expect(text).toContain("Tomorrow\n• Call the bank");
+    expect(text).toContain("Mon 12 Oct\n• Dentist");
+  });
+
+  it("/upcoming says how to plan ahead when nothing is scheduled", async () => {
+    const { text } = await handleMessage("/upcoming");
+    expect(text).toContain("Nothing scheduled yet");
   });
 });
