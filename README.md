@@ -66,9 +66,11 @@ your own database and your own bot, and nobody else can see your list.
 
 ## The Telegram bot
 
-The bot’s list shows only what’s left to do, numbered 1, 2, 3…, with your
-progress in the heading (“4/8 done”). When you finish something it drops off and
-the rest renumber.
+The bot’s list shows only what’s left to do, grouped under the day each task was
+planned for (“Sat, Oct 3rd”, “Today · Mon, Oct 5th”) and numbered 1, 2, 3… across
+the groups, with your progress at the top (“4/8 done today”). When you finish
+something it drops off and the rest renumber. The web app groups today’s list and
+Upcoming the same way.
 
 | Message | What happens |
 | --- | --- |

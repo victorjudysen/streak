@@ -1,6 +1,6 @@
 // Numbers shown on the dashboard, calculated only from real completion records.
 
-import { addDays, weekdayIndex } from "@/lib/dates";
+import { addDays, ordinal, weekdayIndex } from "@/lib/dates";
 
 // ── Contribution calendar (GitHub-style) ──────────────────────────────────────
 
@@ -105,12 +105,6 @@ const LONG_MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-
-function ordinal(n: number): string {
-  const tens = n % 100;
-  if (tens >= 11 && tens <= 13) return `${n}th`;
-  return `${n}${["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
-}
 
 /** GitHub's tooltip wording: "3 tasks done on September 27th." */
 export function describeDay(day: CalendarDay): string {

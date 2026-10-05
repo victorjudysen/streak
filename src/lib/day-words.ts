@@ -1,7 +1,7 @@
 // Turning what people type ("tomorrow", "fri", "12 oct", "2026-10-12") into a day.
 // Pure functions only, so they are easy to test.
 
-import { addDays, formatDay, weekdayIndex } from "@/lib/dates";
+import { addDays, ordinal, weekdayIndex } from "@/lib/dates";
 
 /** How far ahead a task can be scheduled. */
 export const MAX_DAYS_AHEAD = 365;
@@ -84,10 +84,39 @@ export function checkScheduleDay(day: string, today: string): { day: string } | 
   return { day };
 }
 
-/** "Today", "Tomorrow", "Fri 9 Oct", or "Fri 9 Oct 2027" for another year. */
+const WEEKDAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "Mon, Oct 5th"; the year is added when it isn't this year: "Mon, Jan 4th, 2027". */
+export function formatShortDate(day: string, today: string): string {
+  const label = `${WEEKDAY_SHORT[weekdayIndex(day)]}, ${MONTH_SHORT[Number(day.slice(5, 7)) - 1]} ${ordinal(Number(day.slice(8)))}`;
+  return day.slice(0, 4) === today.slice(0, 4) ? label : `${label}, ${day.slice(0, 4)}`;
+}
+
+/** For confirmations: "Today", "Tomorrow", otherwise "Fri, Oct 9th". */
 export function describeScheduleDay(day: string, today: string): string {
   if (day === today) return "Today";
   if (day === addDays(today, 1)) return "Tomorrow";
-  const label = formatDay(day, { weekday: "short", day: "numeric", month: "short" });
-  return day.slice(0, 4) === today.slice(0, 4) ? label : `${label} ${day.slice(0, 4)}`;
+  return formatShortDate(day, today);
+}
+
+/** For group headings: "Today · Mon, Oct 5th", "Tomorrow · …", "Yesterday · …", or just the date. */
+export function formatDayHeading(day: string, today: string): string {
+  const date = formatShortDate(day, today);
+  if (day === today) return `Today · ${date}`;
+  if (day === addDays(today, 1)) return `Tomorrow · ${date}`;
+  if (day === addDays(today, -1)) return `Yesterday · ${date}`;
+  return date;
+}
+
+/** Groups items into consecutive runs of the same day, keeping their order. */
+export function groupByDay<T>(items: T[], dayOf: (item: T) => string): { day: string; items: T[] }[] {
+  const groups: { day: string; items: T[] }[] = [];
+  for (const item of items) {
+    const day = dayOf(item);
+    const last = groups.at(-1);
+    if (last?.day === day) last.items.push(item);
+    else groups.push({ day, items: [item] });
+  }
+  return groups;
 }

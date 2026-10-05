@@ -177,6 +177,9 @@ h2 { font-size: 1.75rem; }
 .done-section[open] summary::before { transform: rotate(90deg); }
 .done-section summary span { color: var(--color-accent); }
 .done-section summary:focus-visible { outline: 0; box-shadow: var(--focus-ring); }
+.task-group + .task-group { margin-top: 6px; }
+.task-group-heading { margin: 10px 0 0; color: var(--color-accent-strong); font: 600 .66rem var(--font-body); }
+.task-group-heading.is-past { color: var(--clay); }
 .upcoming-day { margin-bottom: 6px; }
 .upcoming-label { margin: 6px 0 0; color: var(--color-accent-strong); font: 600 .66rem var(--font-body); }
 .task.is-upcoming { min-height: 44px; padding-left: 4px; }

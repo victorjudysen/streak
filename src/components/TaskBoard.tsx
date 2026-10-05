@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { addTaskAction, editTaskAction, removeTaskAction, setTaskDoneAction, type FormState } from "@/app/actions";
 import { TaskEditor } from "@/components/TaskEditor";
+import { formatDayHeading, groupByDay } from "@/lib/day-words";
 import { MAX_TITLE_LENGTH } from "@/lib/task-rules";
 
 export interface TaskView {
@@ -154,7 +155,8 @@ export function TaskBoard({
   const open = optimistic.filter((task) => !task.done);
   const done = optimistic.filter((task) => task.done);
 
-  const renderTask = (task: TaskView) =>
+  /** `grouped`: the task sits under its day heading, so the "From …" tag is redundant. */
+  const renderTask = (task: TaskView, grouped = false) =>
     editingId === task.id ? (
       <li key={task.id} className="task is-editing">
         <TaskEditor
@@ -184,7 +186,7 @@ export function TaskBoard({
         <span className="task-copy">
           <strong>{task.title}</strong>
           <small>
-            {task.carriedFrom ? <span className="carried">From {task.carriedFrom}</span> : null}
+            {task.carriedFrom && !grouped ? <span className="carried">From {task.carriedFrom}</span> : null}
             {task.isRoutine ? <span className="routine-tag">↻ Routine</span> : null}
             {task.fromTelegram ? <span>via Telegram</span> : null}
           </small>
@@ -280,7 +282,15 @@ export function TaskBoard({
         ) : open.length === 0 ? (
           <p className="empty-state">Everything’s done for today 🎉</p>
         ) : (
-          <ul className="task-list">{open.map(renderTask)}</ul>
+          // Grouped by the day each task was planned for, oldest first, like the bot's /list.
+          groupByDay(open, (task) => task.taskDate).map((group) => (
+            <section key={group.day} className="task-group" aria-labelledby={`day-${group.day}`}>
+              <h3 id={`day-${group.day}`} className={group.day < today ? "task-group-heading is-past" : "task-group-heading"}>
+                {formatDayHeading(group.day, today)}
+              </h3>
+              <ul className="task-list">{group.items.map((task) => renderTask(task, true))}</ul>
+            </section>
+          ))
         )}
         {upcomingDays.length > 0 ? (
           <details className="done-section upcoming-section">
@@ -333,7 +343,7 @@ export function TaskBoard({
             <summary>
               Done today <span>({done.length})</span>
             </summary>
-            <ul className="task-list">{done.map(renderTask)}</ul>
+            <ul className="task-list">{done.map((task) => renderTask(task))}</ul>
           </details>
         ) : null}
       </div>
