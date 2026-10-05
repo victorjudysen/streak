@@ -56,6 +56,13 @@ vi.mock("@/lib/tasks", () => ({
     task.done_at = null;
     return { ok: true, task };
   },
+  editTask: async (id: string, changes: { title?: string; day?: string }) => {
+    const task = found(id);
+    if (!task) return { ok: false, error: "That task no longer exists." };
+    if (changes.title !== undefined) task.title = changes.title;
+    if (changes.day !== undefined) task.task_date = changes.day;
+    return { ok: true, task };
+  },
   removeTask: async (id: string) => {
     const task = found(id);
     if (!task) return { ok: false, error: "That task no longer exists." };
@@ -169,5 +176,29 @@ describe("scheduling ahead", () => {
   it("/upcoming says how to plan ahead when nothing is scheduled", async () => {
     const { text } = await handleMessage("/upcoming");
     expect(text).toContain("Nothing scheduled yet");
+  });
+});
+
+describe("editing", () => {
+  it("/edit 2 renames the 2nd task still on the list", async () => {
+    const { text } = await handleMessage("/edit 2 Walkthrough doc for Karakana");
+    expect(text).toContain("Renamed: Walkthrough doc → Walkthrough doc for Karakana");
+    expect(text).toContain("2. ⬜ Walkthrough doc for Karakana");
+  });
+
+  it("/move 1 tomorrow moves it off today's list", async () => {
+    const { text } = await handleMessage("/move 1 tomorrow");
+    expect(text).toContain("Moved to Tomorrow: Work on the idea");
+    expect(text).not.toContain("⬜ Work on the idea");
+    expect(store.find((task) => task.title === "Work on the idea")?.task_date).toBe("2026-09-29");
+  });
+
+  it("/move accepts 'to' and explains days it can't read", async () => {
+    expect((await handleMessage("/move 2 to fri")).text).toContain("Moved to Fri 2 Oct: Walkthrough doc");
+    expect((await handleMessage("/move 1 someday")).text).toContain("I couldn’t read “someday” as a day");
+  });
+
+  it("explains a number that isn't on the list", async () => {
+    expect((await handleMessage("/edit 9 Nope")).text).toContain("#9: there is no task with that number");
   });
 });

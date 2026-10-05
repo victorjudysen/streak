@@ -8,6 +8,8 @@
 //   /undo                  → show today's finished tasks, numbered
 //   /undo 2                → untick the 2nd of those
 //   /upcoming  (/later)    → tasks scheduled for later days
+//   /edit 2 New title      → rename task 2
+//   /move 2 tomorrow       → move task 2 to another day ("/move 2 to fri" works too)
 //   tomorrow: Call the bank → add for another day (also "fri:", "12 oct:", "/add tomorrow: …")
 //   /remove 2  (/delete)   → remove a task (earlier unfinished tasks are let go)
 //   /help  or  /start      → show these instructions
@@ -16,13 +18,19 @@ export type Command =
   | { kind: "add"; titles: string[] }
   | { kind: "list" }
   | { kind: "upcoming" }
+  | { kind: "edit"; target: number; title: string }
+  | { kind: "move"; target: number; when: string }
   | { kind: "done"; targets: number[] | "all" }
   | { kind: "undo"; targets: number[] | "list" }
   | { kind: "remove"; targets: number[] }
   | { kind: "help" }
   | { kind: "invalid"; message: string };
 
-const ALIASES: Record<string, "add" | "list" | "upcoming" | "done" | "undo" | "remove" | "help"> = {
+const ALIASES: Record<string, "add" | "list" | "upcoming" | "edit" | "move" | "done" | "undo" | "remove" | "help"> = {
+  edit: "edit",
+  rename: "edit",
+  move: "move",
+  reschedule: "move",
   upcoming: "upcoming",
   later: "upcoming",
   scheduled: "upcoming",
@@ -87,6 +95,18 @@ export function parseCommand(text: string): Command {
       return { kind: "list" };
     case "upcoming":
       return { kind: "upcoming" };
+    case "edit": {
+      const parts = rest.match(/^(\d+)\s+([\s\S]+)$/);
+      return parts
+        ? { kind: "edit", target: Number(parts[1]), title: parts[2].trim() }
+        : { kind: "invalid", message: "Use the number from /list and the new title, e.g. /edit 2 Call the bank at 3" };
+    }
+    case "move": {
+      const parts = rest.match(/^(\d+)\s+(?:to\s+)?([\s\S]+)$/i);
+      return parts
+        ? { kind: "move", target: Number(parts[1]), when: parts[2].trim() }
+        : { kind: "invalid", message: "Use the number from /list and a day, e.g. /move 2 tomorrow" };
+    }
     case "add": {
       const titles = splitLines(rest);
       return titles.length

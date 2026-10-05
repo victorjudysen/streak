@@ -23,6 +23,9 @@ your own database and your own bot, and nobody else can see your list.
 - **Plan ahead.** Schedule a task for any day in the next year, from the app’s
   date picker or by starting a Telegram message with a day (`fri: Gym`). It
   waits in a folded “Upcoming” section and appears on the list that morning.
+- **Edit tasks.** Rename a task or move it to another day with the ✎ button, or
+  `/edit 2 New title` and `/move 2 fri` in Telegram. Moving an old unfinished
+  task lets the original go (kept on record) and plans a fresh copy.
 - **Morning message.** Every day at 9am your time, the bot sends today’s list
   with a tap button per task.
 - **Routines.** Tasks that repeat on chosen weekdays and appear on the list by
@@ -76,6 +79,8 @@ the rest renumber.
 | `/undo` | Shows what you’ve ticked off today, numbered. `/undo 2` unticks the 2nd. |
 | `tomorrow: Call the bank` | Schedules a task for another day. Also `fri: …`, `12 oct: …`, `2026-10-12: …`, or `/add fri: …`. Text before a colon only counts if it’s a day. |
 | `/upcoming` | What’s scheduled for later days. |
+| `/edit 2 New title` | Renames task 2. |
+| `/move 2 tomorrow` | Moves task 2 to another day (`/move 2 to fri` works too). |
 
 Tap a task’s button to tick it off; the message updates in place. Numbers in a
 command always refer to the list as it was when you sent it.

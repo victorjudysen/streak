@@ -10,7 +10,7 @@ import { changePassword, checkPassword } from "@/lib/credentials";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSessionToken } from "@/lib/session";
 import { parseWeekdays } from "@/lib/routine-rules";
 import { createRoutine, removeRoutine, setRoutinePaused } from "@/lib/routines";
-import { addTasks, completeTask, removeTask, undoTask } from "@/lib/tasks";
+import { addTasks, completeTask, editTask, removeTask, undoTask } from "@/lib/tasks";
 
 export type FormState = { error?: string; success?: string };
 
@@ -74,6 +74,20 @@ export async function setTaskDoneAction(id: string, done: boolean): Promise<Form
   const result = done ? await completeTask(id) : await undoTask(id);
   revalidatePath("/");
   return result.ok ? {} : { error: result.error };
+}
+
+export async function editTaskAction(id: string, changes: { title?: string; day?: string }): Promise<FormState> {
+  await requireSession();
+  const result = await editTask(id, {
+    title: typeof changes.title === "string" ? changes.title : undefined,
+    day: typeof changes.day === "string" ? changes.day : undefined,
+  });
+  revalidatePath("/");
+  if (!result.ok) return { error: result.error };
+  const now = today();
+  return result.task.task_date > now
+    ? { success: `Moved to ${describeScheduleDay(result.task.task_date, now)}.` }
+    : { success: "Saved." };
 }
 
 export async function removeTaskAction(id: string): Promise<FormState> {

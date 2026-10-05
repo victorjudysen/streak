@@ -8,12 +8,14 @@ import { db } from "@/lib/supabase";
 import { isActive, isScheduledOn, type Routine } from "@/lib/routine-rules";
 import {
   decideComplete,
+  decideEdit,
   decideRemove,
   decideUndo,
   isOnList,
   sortTasks,
   validateTitle,
   type Task,
+  type TaskChanges,
   type TaskSource,
 } from "@/lib/task-rules";
 
@@ -130,6 +132,51 @@ export async function undoTask(id: string): Promise<Result> {
   const decision = decideUndo(task, today());
   if ("error" in decision) return { ok: false, error: decision.error };
   return patch(id, { done_at: null });
+}
+
+/**
+ * Renames a task and/or moves it to another day, following decideEdit(). Moving an
+ * old unfinished task lets go of the original and plans a fresh copy, which is
+ * what this returns.
+ */
+export async function editTask(id: string, changes: { title?: string; day?: string }): Promise<Result> {
+  const task = await find(id);
+  if (!task) return { ok: false, error: "That task no longer exists." };
+  const now = today();
+
+  const next: TaskChanges = {};
+  if (changes.title !== undefined) {
+    const checked = validateTitle(changes.title);
+    if ("error" in checked) return { ok: false, error: checked.error };
+    next.title = checked.title;
+  }
+  if (changes.day !== undefined) {
+    const when = checkScheduleDay(changes.day, now);
+    if ("error" in when) return { ok: false, error: when.error };
+    next.day = when.day;
+  }
+
+  const decision = decideEdit(task, next, now);
+  if ("error" in decision) return { ok: false, error: decision.error };
+
+  if (decision.action === "update") {
+    if ((next.title ?? task.title) === task.title && (next.day ?? task.task_date) === task.task_date) {
+      return { ok: true, task };
+    }
+    return patch(id, { title: next.title ?? task.title, task_date: next.day ?? task.task_date });
+  }
+
+  // Reschedule: keep the missed original on record, plan a fresh copy.
+  const dropped = await patch(id, { dropped_at: new Date().toISOString() });
+  if (!dropped.ok) return dropped;
+  const { data, error } = await db()
+    .from("tasks")
+    .insert({ title: next.title ?? task.title, task_date: next.day!, source: task.source })
+    .select(COLUMNS)
+    .single<Task>();
+  if (error) return { ok: false, error: `Could not save: ${error.message}` };
+  await broadcastTasksChanged();
+  return { ok: true, task: data };
 }
 
 export async function removeTask(id: string): Promise<Result<Task & { removal: "delete" | "drop" }>> {
