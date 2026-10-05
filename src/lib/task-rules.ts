@@ -98,3 +98,40 @@ export function decideRemove(task: Task, day: string, zone?: string): Decision<"
   }
   return { action: "drop" };
 }
+
+export interface TaskChanges {
+  title?: string;
+  /** New day for the task (already checked to be today or later). */
+  day?: string;
+}
+
+/**
+ * What editing a task means:
+ * - "update": change it in place (a new title, or a new day for a task planned
+ *   for today or later);
+ * - "reschedule": an unfinished task carried over from an earlier day moves to a
+ *   new day. The original is let go — kept on record as unfinished — and a fresh
+ *   copy is planned, so the record stays honest about the missed day.
+ * Routine copies are edited through their routine; finished tasks can only be
+ * renamed, and only on the day they were finished.
+ */
+export function decideEdit(
+  task: Task,
+  changes: TaskChanges,
+  day: string,
+  zone?: string,
+): Decision<"update" | "reschedule"> {
+  if (task.dropped_at) return { error: "That task was let go." };
+  if (task.routine_id) return { error: "This is a routine’s task for the day. Change the routine on the Routines page." };
+  const moving = changes.day !== undefined && changes.day !== task.task_date;
+  if (task.done_at) {
+    if (localDate(task.done_at, zone) !== day) return { error: "That was completed on a closed day, so it stays as recorded." };
+    if (moving) return { error: "Undo it first, then move it." };
+    return { action: "update" };
+  }
+  if (moving && task.task_date < day) {
+    if (changes.day === day) return { error: "It’s already on today’s list." };
+    return { action: "reschedule" };
+  }
+  return { action: "update" };
+}
