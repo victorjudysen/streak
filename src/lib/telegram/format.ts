@@ -87,7 +87,7 @@ export function formatMorningDigest(day: string, tasks: Task[]): string {
     `${open} task${open === 1 ? "" : "s"} for today` +
     (carried > 0 ? `, ${carried} carried over from earlier.` : ".");
   const lines = [greeting, summary, "", formatList(day, tasks)];
-  if (open > 0) lines.push("", "Tap a task below to tick it off.");
+  if (open > 0) lines.push("", "Tap a number below to tick that task off.");
   return lines.join("\n");
 }
 
@@ -96,27 +96,28 @@ export function formatMorningDigest(day: string, tasks: Task[]): string {
 export type InlineKeyboard = { text: string; callback_data: string }[][];
 export type ButtonAction = { action: "done" | "undo"; taskId: string };
 
-/** Telegram allows up to 100 buttons; a daily list never needs more than this. */
-const MAX_BUTTONS = 30;
-const MAX_LABEL = 40;
+/** Telegram allows up to 100 buttons in a message. */
+const MAX_BUTTONS = 60;
+/** Numbers per row: big enough to tap, compact enough for a long list. */
+const BUTTONS_PER_ROW = 5;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function shorten(title: string): string {
-  return title.length > MAX_LABEL ? `${title.slice(0, MAX_LABEL - 1)}…` : title;
-}
-
 /**
- * One button per unfinished task, numbered like the list above it. Tapping one
- * ticks the task off; when the message refreshes it drops out and the rest
- * renumber. No buttons once everything is done. `callback_data` is "d:<id>" (≤ 64 bytes); "u:<id>"
+ * A compact grid of numbers, one per unfinished task, matching the numbered list
+ * in the message text (which carries the titles). Tapping a number ticks that task
+ * off; when the message refreshes it drops out and the rest renumber. No buttons
+ * once everything is done. `callback_data` is "d:<id>" (≤ 64 bytes); "u:<id>"
  * (undo) is still accepted from older messages.
  */
 export function taskButtons(tasks: Task[]): InlineKeyboard | undefined {
   const open = openTasks(tasks).slice(0, MAX_BUTTONS);
   if (open.length === 0) return undefined;
-  return open.map((task, index) => [
-    { text: `⬜ ${index + 1}. ${shorten(task.title)}`, callback_data: `d:${task.id}` },
-  ]);
+  const rows: InlineKeyboard = [];
+  open.forEach((task, index) => {
+    if (index % BUTTONS_PER_ROW === 0) rows.push([]);
+    rows[rows.length - 1].push({ text: String(index + 1), callback_data: `d:${task.id}` });
+  });
+  return rows;
 }
 
 /** Reads a button's callback_data; anything unexpected is rejected. */

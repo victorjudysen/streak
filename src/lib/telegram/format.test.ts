@@ -81,7 +81,7 @@ describe("formatMorningDigest", () => {
     expect(text.startsWith("Good morning ☀️ Saturday 26 September")).toBe(true);
     expect(text).toContain("2 tasks for today, 1 carried over from earlier.");
     expect(text).toContain("1. ⬜ Renew passport");
-    expect(text).toContain("Tap a task below to tick it off.");
+    expect(text).toContain("Tap a number below to tick that task off.");
   });
 
   it("only invites tapping when something is left to do", () => {
@@ -105,23 +105,35 @@ const ID_A = "0b2e7c1e-5d0a-4a57-9a8e-2f0d1c3b4a5f";
 const ID_B = "7f3c2a10-9b8e-4c6d-8e1f-0a2b3c4d5e6f";
 
 describe("taskButtons", () => {
-  it("only has buttons for unfinished tasks, numbered like the list", () => {
+  it("only has number buttons for unfinished tasks, numbered like the list", () => {
     const keyboard = taskButtons([
       task({ id: ID_B, title: "Gym", done_at: "2026-09-26T05:00:00Z" }),
       task({ id: ID_A, title: "Buy milk" }),
     ]);
-    expect(keyboard).toEqual([[{ text: "⬜ 1. Buy milk", callback_data: `d:${ID_A}` }]]);
+    expect(keyboard).toEqual([[{ text: "1", callback_data: `d:${ID_A}` }]]);
+  });
+
+  it("lays numbers out five to a row", () => {
+    const tasks = Array.from({ length: 14 }, (_, i) =>
+      task({ id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`, seq: i + 1 }),
+    );
+    const keyboard = taskButtons(tasks)!;
+    expect(keyboard.map((row) => row.map((button) => button.text))).toEqual([
+      ["1", "2", "3", "4", "5"],
+      ["6", "7", "8", "9", "10"],
+      ["11", "12", "13", "14"],
+    ]);
+    expect(keyboard[2][3].callback_data).toBe(`d:${tasks[13].id}`);
   });
 
   it("has no buttons once everything is done", () => {
     expect(taskButtons([task({ id: ID_A, done_at: "2026-09-26T05:00:00Z" })])).toBeUndefined();
   });
 
-  it("keeps callback data within Telegram's 64-byte limit and shortens long titles", () => {
+  it("keeps callback data within Telegram's 64-byte limit, whatever the title", () => {
     const [[button]] = taskButtons([task({ id: ID_A, title: "x".repeat(200) })])!;
     expect(new TextEncoder().encode(button.callback_data).length).toBeLessThanOrEqual(64);
-    expect(button.text.length).toBeLessThan(60);
-    expect(button.text.endsWith("…")).toBe(true);
+    expect(button.text).toBe("1");
   });
 
   it("has no keyboard for an empty list", () => {
