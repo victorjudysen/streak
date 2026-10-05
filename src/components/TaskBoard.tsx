@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
-import { addTaskAction, removeTaskAction, setTaskDoneAction, type FormState } from "@/app/actions";
+import { addTaskAction, editTaskAction, removeTaskAction, setTaskDoneAction, type FormState } from "@/app/actions";
+import { TaskEditor } from "@/components/TaskEditor";
 import { MAX_TITLE_LENGTH } from "@/lib/task-rules";
 
 export interface TaskView {
@@ -15,6 +16,8 @@ export interface TaskView {
   fromTelegram: boolean;
   /** Created from a routine (recurring task). */
   isRoutine: boolean;
+  /** ISO day the task was planned for. */
+  taskDate: string;
 }
 
 /** A task planned for a later day. */
@@ -27,7 +30,10 @@ export interface UpcomingView {
   dayLabel: string;
 }
 
-type Change = { id: string; type: "toggle"; done: boolean } | { id: string; type: "remove" };
+type Change =
+  | { id: string; type: "toggle"; done: boolean }
+  | { id: string; type: "remove" }
+  | { id: string; type: "rename"; title: string };
 
 export function TaskBoard({
   tasks,
@@ -43,8 +49,57 @@ export function TaskBoard({
   lastDay: string;
 }) {
   const [day, setDay] = useState(today);
-  const [optimisticUpcoming, removeUpcoming] = useOptimistic(upcoming, (current, id: string) =>
-    current.filter((task) => task.id !== id),
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  /**
+   * Saves an edit and updates the list straight away: a rename shows the new title,
+   * a move takes the task off today's list. If saving fails, the change springs
+   * back, the error shows, and the editor reopens.
+   */
+  const save = (id: string, changes: { title?: string; day?: string }, where: "today" | "upcoming") => {
+    setError(null);
+    setNotice(null);
+    setEditingId(null);
+    startTransition(async () => {
+      const title = changes.title?.trim();
+      if (where === "today") {
+        if (changes.day !== undefined) applyOptimistic({ id, type: "remove" });
+        else if (title) applyOptimistic({ id, type: "rename", title });
+      } else if (title) {
+        applyUpcoming({ id, type: "rename", title });
+      }
+      const result = await editTaskAction(id, changes);
+      if (result.error) {
+        setError(result.error);
+        setEditingId(id);
+      } else {
+        setNotice(result.success ?? null);
+      }
+    });
+  };
+
+  const editButton = (id: string, title: string) => (
+    <button
+      type="button"
+      className="task-edit"
+      aria-label={`Edit “${title}”`}
+      title="Edit"
+      onClick={() => {
+        setError(null);
+        setNotice(null);
+        setEditingId(id);
+      }}
+    >
+      ✎
+    </button>
+  );
+  const [optimisticUpcoming, applyUpcoming] = useOptimistic(
+    upcoming,
+    (current, change: { id: string; type: "remove" } | { id: string; type: "rename"; title: string }) =>
+      change.type === "remove"
+        ? current.filter((task) => task.id !== change.id)
+        : current.map((task) => (task.id === change.id ? { ...task, title: change.title } : task)),
   );
   const [addState, addAction, adding] = useActionState<FormState, FormData>(addTaskAction, {});
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +107,13 @@ export function TaskBoard({
   const [optimistic, applyOptimistic] = useOptimistic(tasks, (current, change: Change) =>
     change.type === "remove"
       ? current.filter((task) => task.id !== change.id)
-      : current.map((task) => (task.id === change.id ? { ...task, done: change.done } : task)),
+      : current.map((task) =>
+          task.id !== change.id
+            ? task
+            : change.type === "rename"
+              ? { ...task, title: change.title }
+              : { ...task, done: change.done },
+        ),
   );
   const inputRef = useRef<HTMLInputElement>(null);
   const wasAdding = useRef(false);
@@ -76,7 +137,7 @@ export function TaskBoard({
   const removeScheduled = (id: string) => {
     setError(null);
     startTransition(async () => {
-      removeUpcoming(id);
+      applyUpcoming({ id, type: "remove" });
       const result = await removeTaskAction(id);
       if (result.error) setError(result.error);
     });
@@ -93,7 +154,20 @@ export function TaskBoard({
   const open = optimistic.filter((task) => !task.done);
   const done = optimistic.filter((task) => task.done);
 
-  const renderTask = (task: TaskView) => (
+  const renderTask = (task: TaskView) =>
+    editingId === task.id ? (
+      <li key={task.id} className="task is-editing">
+        <TaskEditor
+          title={task.title}
+          day={task.taskDate < today ? today : task.taskDate}
+          today={today}
+          lastDay={lastDay}
+          allowMove={!task.done}
+          onSave={(changes) => save(task.id, changes, "today")}
+          onCancel={() => setEditingId(null)}
+        />
+      </li>
+    ) : (
     <li key={task.id} className={task.done ? "task is-complete" : "task"}>
       <button
         type="button"
@@ -117,6 +191,8 @@ export function TaskBoard({
         </span>
         <span className="task-time">{task.done ? (task.doneTime ?? "Now") : "—"}</span>
       </button>
+      {/* Routine copies are changed through their routine, on the Routines page. */}
+      {task.isRoutine ? <span aria-hidden="true" /> : editButton(task.id, task.title)}
       <button
         type="button"
         className="task-remove"
@@ -133,7 +209,7 @@ export function TaskBoard({
         ×
       </button>
     </li>
-  );
+    );
 
   const doneCount = optimistic.filter((task) => task.done).length;
   const percent = optimistic.length ? Math.round((doneCount / optimistic.length) * 100) : 0;
@@ -194,8 +270,8 @@ export function TaskBoard({
         </div>
       </div>
 
-      <p className={!message && addState.success ? "form-message is-success" : "form-message"} role="alert">
-        {message ?? addState.success}
+      <p className={!message && (notice ?? addState.success) ? "form-message is-success" : "form-message"} role="alert">
+        {message ?? notice ?? addState.success}
       </p>
 
       <div className="task-scroll" aria-label="Today’s tasks">
@@ -215,22 +291,37 @@ export function TaskBoard({
               <div key={group.day} className="upcoming-day">
                 <p className="upcoming-label">{group.label}</p>
                 <ul className="task-list">
-                  {group.tasks.map((task) => (
-                    <li key={task.id} className="task is-upcoming">
-                      <span className="task-copy">
-                        <strong>{task.title}</strong>
-                      </span>
-                      <button
-                        type="button"
-                        className="task-remove"
-                        aria-label={`Remove “${task.title}” from ${group.label}`}
-                        title="Remove"
-                        onClick={() => removeScheduled(task.id)}
-                      >
-                        ×
-                      </button>
-                    </li>
-                  ))}
+                  {group.tasks.map((task) =>
+                    editingId === task.id ? (
+                      <li key={task.id} className="task is-editing">
+                        <TaskEditor
+                          title={task.title}
+                          day={task.day}
+                          today={today}
+                          lastDay={lastDay}
+                          allowMove
+                          onSave={(changes) => save(task.id, changes, "upcoming")}
+                          onCancel={() => setEditingId(null)}
+                        />
+                      </li>
+                    ) : (
+                      <li key={task.id} className="task is-upcoming">
+                        <span className="task-copy">
+                          <strong>{task.title}</strong>
+                        </span>
+                        {editButton(task.id, task.title)}
+                        <button
+                          type="button"
+                          className="task-remove"
+                          aria-label={`Remove “${task.title}” from ${group.label}`}
+                          title="Remove"
+                          onClick={() => removeScheduled(task.id)}
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ),
+                  )}
                 </ul>
               </div>
             ))}

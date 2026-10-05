@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { addDays, localDate } from "@/lib/dates";
-import { decideComplete, decideRemove, decideUndo, isOnList, sortTasks, validateTitle, type Task } from "@/lib/task-rules";
+import {
+  decideComplete,
+  decideEdit,
+  decideRemove,
+  decideUndo,
+  isOnList,
+  sortTasks,
+  validateTitle,
+  type Task,
+} from "@/lib/task-rules";
 
 const ZONE = "Africa/Dar_es_Salaam"; // UTC+3
 const TODAY = "2026-09-24";
@@ -104,5 +113,33 @@ describe("sortTasks", () => {
       task({ id: "a", seq: 11 }),
     ]);
     expect(sorted.map((t) => t.id)).toEqual(["old", "a", "b"]);
+  });
+});
+
+describe("decideEdit", () => {
+  it("renames or moves today's and future tasks in place", () => {
+    expect(decideEdit(task(), { title: "Call the bank again" }, TODAY, ZONE)).toEqual({ action: "update" });
+    expect(decideEdit(task(), { day: "2026-09-30" }, TODAY, ZONE)).toEqual({ action: "update" });
+    expect(decideEdit(task({ task_date: "2026-09-30" }), { day: TODAY }, TODAY, ZONE)).toEqual({ action: "update" });
+  });
+
+  it("reschedules a carried-over task by letting go of the original", () => {
+    const old = task({ task_date: "2026-09-21" });
+    expect(decideEdit(old, { day: "2026-09-30" }, TODAY, ZONE)).toEqual({ action: "reschedule" });
+    expect(decideEdit(old, { title: "Renew passport now" }, TODAY, ZONE)).toEqual({ action: "update" });
+    expect(decideEdit(old, { day: TODAY }, TODAY, ZONE)).toHaveProperty("error");
+  });
+
+  it("only renames finished tasks, and only on the day they were finished", () => {
+    const doneToday = task({ done_at: "2026-09-24T09:00:00Z" });
+    expect(decideEdit(doneToday, { title: "Called the bank" }, TODAY, ZONE)).toEqual({ action: "update" });
+    expect(decideEdit(doneToday, { day: "2026-09-30" }, TODAY, ZONE)).toHaveProperty("error");
+    const doneEarlier = task({ task_date: "2026-09-21", done_at: "2026-09-22T09:00:00Z" });
+    expect(decideEdit(doneEarlier, { title: "x" }, TODAY, ZONE)).toHaveProperty("error");
+  });
+
+  it("leaves routine copies and let-go tasks alone", () => {
+    expect(decideEdit(task({ routine_id: "r1" }), { title: "x" }, TODAY, ZONE)).toHaveProperty("error");
+    expect(decideEdit(task({ dropped_at: "2026-09-24T09:00:00Z" }), { title: "x" }, TODAY, ZONE)).toHaveProperty("error");
   });
 });

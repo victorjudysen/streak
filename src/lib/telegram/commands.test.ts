@@ -22,6 +22,11 @@ describe("parseCommand", () => {
     expect(parseCommand("/list")).toEqual({ kind: "list" });
     expect(parseCommand("/today")).toEqual({ kind: "list" });
     expect(parseCommand("/upcoming")).toEqual({ kind: "upcoming" });
+    expect(parseCommand("/edit 2 Call the bank at 3")).toEqual({ kind: "edit", target: 2, title: "Call the bank at 3" });
+    expect(parseCommand("/move 2 to fri")).toEqual({ kind: "move", target: 2, when: "fri" });
+    expect(parseCommand("/move 3 12 oct")).toEqual({ kind: "move", target: 3, when: "12 oct" });
+    expect(parseCommand("/edit 2")).toHaveProperty("kind", "invalid");
+    expect(parseCommand("/move tomorrow")).toHaveProperty("kind", "invalid");
     expect(parseCommand("/later")).toEqual({ kind: "upcoming" });
     expect(parseCommand("/done 1 3")).toEqual({ kind: "done", targets: [1, 3] });
     expect(parseCommand("/done all")).toEqual({ kind: "done", targets: "all" });

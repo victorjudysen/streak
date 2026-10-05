@@ -77,6 +77,7 @@ export default async function Dashboard({
       : null,
     fromTelegram: task.source === "telegram",
     isRoutine: task.routine_id !== null,
+    taskDate: task.task_date,
   }));
 
   const calendar = buildCalendar(range, counts);
@@ -236,6 +237,9 @@ export default async function Dashboard({
           </li>
           <li>
             <code>/upcoming</code> what’s scheduled
+          </li>
+          <li>
+            <code>/move 2 fri</code> move task 2 to another day
           </li>
         </ul>
       </section>

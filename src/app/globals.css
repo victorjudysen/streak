@@ -149,7 +149,7 @@ h2 { font-size: 1.75rem; }
 .form-message.is-success { color: var(--color-accent-strong); }
 .task-scroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--moss-300) transparent; }
 .task-list { margin: 0; padding: 0; list-style: none; }
-.task { display: grid; grid-template-columns: minmax(0, 1fr) 28px; align-items: center; border-bottom: 1px solid var(--color-border); }
+.task { display: grid; grid-template-columns: minmax(0, 1fr) 28px 28px; align-items: center; border-bottom: 1px solid var(--color-border); }
 .task-check { width: 100%; min-height: 56px; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 7px 2px; border: 0; background: transparent; text-align: left; }
 .task-check:hover .task-copy strong { color: var(--color-accent); }
 .check-mark { width: 19px; height: 19px; display: grid; place-items: center; border: 1px solid var(--color-border); border-radius: 50%; color: var(--white); font-size: .68rem; }
@@ -181,6 +181,19 @@ h2 { font-size: 1.75rem; }
 .upcoming-label { margin: 6px 0 0; color: var(--color-accent-strong); font: 600 .66rem var(--font-body); }
 .task.is-upcoming { min-height: 44px; padding-left: 4px; }
 .task.is-upcoming .task-copy strong { font-weight: 400; }
+.task-edit { width: 28px; height: 28px; border: 0; border-radius: 50%; background: transparent; color: var(--color-muted); font-size: .9rem; line-height: 1; opacity: .4; }
+.task:hover .task-edit, .task-edit:focus-visible { opacity: 1; }
+.task-edit:hover { background: var(--canvas); color: var(--color-accent-strong); }
+.task.is-editing { display: block; padding: 10px 0; }
+.task-editor { display: grid; gap: 8px; }
+.task-editor > input { min-height: 38px; padding: 6px 10px; border: 1px solid var(--color-accent); border-radius: 2px; background: var(--white); color: var(--color-text); font: .85rem var(--font-body); }
+.task-editor > input:focus-visible { outline: 0; box-shadow: var(--focus-ring); }
+.task-editor-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.task-editor-row .add-day { grid-column: auto; }
+.task-editor-row .add-day > span { font: 500 .6rem var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.task-editor-note { color: var(--color-muted); font-size: .66rem; }
+.task-editor-actions { display: flex; align-items: center; gap: 10px; }
+.task-editor-actions .primary-button { min-height: 30px; margin: 0; padding: 0 14px; font-size: .74rem; }
 .empty-state { margin: 18px 0 0; color: var(--color-muted); font-size: .78rem; }
 
 /* Record */
@@ -349,7 +362,7 @@ h2 { font-size: 1.75rem; }
   .dashboard-slot, .slot-bot { display: none; }
   .dashboard-slot.is-mobile-active { display: grid; }
   .insights-rail { overflow-y: auto; }
-  .task-remove { opacity: 1; }
+  .task-remove, .task-edit { opacity: 1; }
   .app-footer { padding: 0 12px; }
   /* Keep the AGPL "Source code" link on phones; drop only the tagline. */
   .footer-tagline { display: none; }

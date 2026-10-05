@@ -2,8 +2,8 @@ import "server-only";
 
 import type { Task } from "@/lib/task-rules";
 import { today } from "@/lib/dates";
-import { describeScheduleDay, splitDatePrefix } from "@/lib/day-words";
-import { addTasks, completeTask, listForToday, listUpcoming, removeTask, undoTask } from "@/lib/tasks";
+import { describeScheduleDay, parseDayWord, splitDatePrefix } from "@/lib/day-words";
+import { addTasks, completeTask, editTask, listForToday, listUpcoming, removeTask, undoTask } from "@/lib/tasks";
 import { parseCommand } from "@/lib/telegram/commands";
 import { doneTasks, formatDoneList, formatList, formatUpcoming, openTasks, parseButton } from "@/lib/telegram/format";
 
@@ -19,6 +19,8 @@ export const HELP_TEXT = [
   "",
   "Plan ahead by starting with a day: “tomorrow: Call the bank”, “fri: Gym”, “12 oct: Dentist”.",
   "/upcoming — what’s scheduled for later days",
+  "/edit 2 New title — rename task 2",
+  "/move 2 tomorrow — move task 2 to another day",
   "/help — show this message",
 ].join("\n");
 
@@ -76,6 +78,29 @@ export async function handleMessage(text: string): Promise<BotReply> {
     }
     case "upcoming":
       return { text: formatUpcoming(today(), await listUpcoming()) };
+    case "edit":
+    case "move": {
+      // Numbers refer to what's left on the list, like /done.
+      const before = await listForToday();
+      const task = openTasks(before.tasks)[command.target - 1];
+      if (!task) return { text: `#${command.target}: there is no task with that number. Send /list to check.` };
+
+      const oldTitle = task.title;
+      let line: string;
+      if (command.kind === "edit") {
+        const result = await editTask(task.id, { title: command.title });
+        if (!result.ok) return { text: `“${oldTitle}”: ${result.error}` };
+        line = `Renamed: ${oldTitle} → ${result.task.title}`;
+      } else {
+        const when = parseDayWord(command.when, before.day);
+        if (!when) return { text: `I couldn’t read “${command.when}” as a day. Try “tomorrow”, “fri” or “12 oct”.` };
+        const result = await editTask(task.id, { day: when });
+        if (!result.ok) return { text: `“${oldTitle}”: ${result.error}` };
+        line = `Moved to ${describeScheduleDay(result.task.task_date, before.day)}: ${result.task.title}`;
+      }
+      const after = await listForToday();
+      return { text: [line, "", formatList(after.day, after.tasks)].join("\n"), tasks: after.tasks };
+    }
     case "undo": {
       const before = await listForToday();
       const done = doneTasks(before.tasks);
