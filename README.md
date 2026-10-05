@@ -27,7 +27,7 @@ your own database and your own bot, and nobody else can see your list.
   `/edit 2 New title` and `/move 2 fri` in Telegram. Moving an old unfinished
   task lets the original go (kept on record) and plans a fresh copy.
 - **Morning message.** Every day at 9am your time, the bot sends today’s list
-  with a tap button per task.
+  with a number to tap for each task.
 - **Routines.** Tasks that repeat on chosen weekdays and appear on the list by
   themselves, each with its own streak.
 - **GitHub-style activity graph.** A year of completed tasks, shaded relative to
@@ -75,7 +75,7 @@ Upcoming the same way.
 | Message | What happens |
 | --- | --- |
 | `Call the bank` | Adds a task for today. Several lines add several tasks. |
-| `/list` | What’s left today, numbered, with a tap button per task. |
+| `/list` | What’s left today, numbered, with a button for each number. |
 | `/done 2` | Ticks off task 2. Also `/done 1 3`, `/done 2-4`, `/done all`. |
 | `/remove 2` | Deletes a task added today, or lets go of an older unfinished one. |
 | `/undo` | Shows what you’ve ticked off today, numbered. `/undo 2` unticks the 2nd. |
@@ -84,7 +84,7 @@ Upcoming the same way.
 | `/edit 2 New title` | Renames task 2. |
 | `/move 2 tomorrow` | Moves task 2 to another day (`/move 2 to fri` works too). |
 
-Tap a task’s button to tick it off; the message updates in place. Numbers in a
+Tap a task’s number under the list to tick it off; the message updates in place. Numbers in a
 command always refer to the list as it was when you sent it.
 
 ## Run your own
