@@ -22,7 +22,7 @@ import {
 } from "@/lib/stats";
 import { isCarriedOver } from "@/lib/task-rules";
 import { completedOn, completionsByDay, firstCompletionYear, listForToday, listUpcoming } from "@/lib/tasks";
-import { MAX_DAYS_AHEAD, describeScheduleDay } from "@/lib/day-words";
+import { MAX_DAYS_AHEAD, formatDayHeading } from "@/lib/day-words";
 
 const WEEK_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -47,7 +47,7 @@ export default async function Dashboard({
     id: task.id,
     title: task.title,
     day: task.task_date,
-    dayLabel: describeScheduleDay(task.task_date, day),
+    dayLabel: formatDayHeading(task.task_date, day),
   }));
   const currentYear = Number(day.slice(0, 4));
   const firstYear = (await firstCompletionYear()) ?? currentYear;

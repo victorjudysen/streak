@@ -20,15 +20,16 @@ function task(overrides: Partial<Task> = {}): Task {
 }
 
 describe("formatList", () => {
-  it("lists only what's left, renumbered, and keeps the progress in the heading", () => {
+  it("lists only what's left, grouped by day and numbered across the groups", () => {
     const text = formatList(TODAY, [
       task({ id: "a", title: "Renew passport", task_date: "2026-09-24" }),
       task({ id: "b", title: "Gym", done_at: "2026-09-26T05:00:00Z" }),
       task({ id: "c", title: "Buy milk" }),
     ]);
-    expect(text).toContain("Sat 26 Sept — 1/3 done");
-    expect(text).toContain("1. ⬜ Renew passport (from Thu 24 Sept)");
-    expect(text).toContain("2. ⬜ Buy milk");
+    expect(text.startsWith("1/3 done today")).toBe(true);
+    expect(text).toContain("Thu, Sep 24th\n1. ⬜ Renew passport\n");
+    expect(text).toContain("Today · Sat, Sep 26th\n2. ⬜ Buy milk");
+    expect(text).not.toContain("(from");
     expect(text).not.toContain("Gym");
     expect(text).toContain("✅ 1 done today — send /undo to see it.");
   });
@@ -41,7 +42,7 @@ describe("formatList", () => {
   });
 
   it("has no done line when nothing is done yet", () => {
-    expect(formatList(TODAY, [task()])).not.toContain("done today");
+    expect(formatList(TODAY, [task()])).not.toContain("✅");
   });
 });
 

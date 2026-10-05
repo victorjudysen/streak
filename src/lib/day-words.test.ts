@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { checkScheduleDay, describeScheduleDay, parseDayWord, splitDatePrefix } from "@/lib/day-words";
+import {
+  checkScheduleDay,
+  describeScheduleDay,
+  formatDayHeading,
+  formatShortDate,
+  groupByDay,
+  parseDayWord,
+  splitDatePrefix,
+} from "@/lib/day-words";
 
 const TODAY = "2026-10-05"; // a Monday
 
@@ -62,7 +70,39 @@ describe("describeScheduleDay", () => {
   it("names nearby days and adds the year when it differs", () => {
     expect(describeScheduleDay(TODAY, TODAY)).toBe("Today");
     expect(describeScheduleDay("2026-10-06", TODAY)).toBe("Tomorrow");
-    expect(describeScheduleDay("2026-10-09", TODAY)).toBe("Fri 9 Oct");
-    expect(describeScheduleDay("2027-01-03", TODAY)).toBe("Sun 3 Jan 2027");
+    expect(describeScheduleDay("2026-10-09", TODAY)).toBe("Fri, Oct 9th");
+    expect(describeScheduleDay("2027-01-03", TODAY)).toBe("Sun, Jan 3rd, 2027");
+  });
+});
+
+describe("date headings", () => {
+  it("formats dates like “Mon, Jan 1st”", () => {
+    expect(formatShortDate(TODAY, TODAY)).toBe("Mon, Oct 5th");
+    expect(formatShortDate("2026-10-01", TODAY)).toBe("Thu, Oct 1st");
+    expect(formatShortDate("2026-10-02", TODAY)).toBe("Fri, Oct 2nd");
+    expect(formatShortDate("2026-10-03", TODAY)).toBe("Sat, Oct 3rd");
+    expect(formatShortDate("2026-10-11", TODAY)).toBe("Sun, Oct 11th");
+    expect(formatShortDate("2026-10-22", TODAY)).toBe("Thu, Oct 22nd");
+    expect(formatShortDate("2027-01-01", TODAY)).toBe("Fri, Jan 1st, 2027");
+  });
+
+  it("names today, tomorrow and yesterday in headings", () => {
+    expect(formatDayHeading(TODAY, TODAY)).toBe("Today · Mon, Oct 5th");
+    expect(formatDayHeading("2026-10-06", TODAY)).toBe("Tomorrow · Tue, Oct 6th");
+    expect(formatDayHeading("2026-10-04", TODAY)).toBe("Yesterday · Sun, Oct 4th");
+    expect(formatDayHeading("2026-10-03", TODAY)).toBe("Sat, Oct 3rd");
+  });
+
+  it("groups consecutive items by day without reordering them", () => {
+    const items = [
+      { id: 1, day: "2026-10-03" },
+      { id: 2, day: TODAY },
+      { id: 3, day: TODAY },
+    ];
+    expect(groupByDay(items, (item) => item.day)).toEqual([
+      { day: "2026-10-03", items: [items[0]] },
+      { day: TODAY, items: [items[1], items[2]] },
+    ]);
+    expect(groupByDay([], () => TODAY)).toEqual([]);
   });
 });

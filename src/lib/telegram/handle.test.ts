@@ -162,15 +162,15 @@ describe("scheduling ahead", () => {
 
   it("works per line, with /add too, and leaves other colons alone", async () => {
     const { text } = await handleMessage("/add fri: Gym\nNote: buy milk");
-    expect(text).toContain("Scheduled for Fri 2 Oct: Gym");
+    expect(text).toContain("Scheduled for Fri, Oct 2nd: Gym");
     expect(text).toContain("Added: Note: buy milk");
   });
 
   it("/upcoming lists what's scheduled, grouped by day", async () => {
     await handleMessage("tomorrow: Call the bank\n12 oct: Dentist");
     const { text } = await handleMessage("/upcoming");
-    expect(text).toContain("Tomorrow\n• Call the bank");
-    expect(text).toContain("Mon 12 Oct\n• Dentist");
+    expect(text).toContain("Tomorrow · Tue, Sep 29th\n• Call the bank");
+    expect(text).toContain("Mon, Oct 12th\n• Dentist");
   });
 
   it("/upcoming says how to plan ahead when nothing is scheduled", async () => {
@@ -194,7 +194,7 @@ describe("editing", () => {
   });
 
   it("/move accepts 'to' and explains days it can't read", async () => {
-    expect((await handleMessage("/move 2 to fri")).text).toContain("Moved to Fri 2 Oct: Walkthrough doc");
+    expect((await handleMessage("/move 2 to fri")).text).toContain("Moved to Fri, Oct 2nd: Walkthrough doc");
     expect((await handleMessage("/move 1 someday")).text).toContain("I couldn’t read “someday” as a day");
   });
 

@@ -1,7 +1,7 @@
 // Plain-text messages the bot sends. Pure functions only, so they are easy to test.
 
 import { formatDay } from "@/lib/dates";
-import { describeScheduleDay } from "@/lib/day-words";
+import { formatDayHeading, groupByDay } from "@/lib/day-words";
 import { isCarriedOver, type Task } from "@/lib/task-rules";
 
 const SHORT_DAY: Intl.DateTimeFormatOptions = { weekday: "short", day: "numeric", month: "short" };
@@ -16,27 +16,32 @@ export function doneTasks(tasks: Task[]): Task[] {
   return tasks.filter((task) => task.done_at);
 }
 
-function describe(task: Task, day: string): string {
-  const from = isCarriedOver(task, day) ? ` (from ${formatDay(task.task_date, SHORT_DAY)})` : "";
+/** A task line; `withFrom` adds "(from Sat 3 Oct)" when the list isn't already grouped by day. */
+function describe(task: Task, day: string, withFrom = true): string {
+  const from = withFrom && isCarriedOver(task, day) ? ` (from ${formatDay(task.task_date, SHORT_DAY)})` : "";
   const routine = task.routine_id ? " 🔁" : "";
   return `${task.title}${routine}${from}`;
 }
 
 /**
- * Today's list as the bot shows it: only what's left to do, numbered 1, 2, 3…
- * Finished tasks drop out (and the rest renumber); the heading keeps the progress.
+ * Today's list as the bot shows it: only what's left to do, grouped under the day
+ * each task was planned for ("Sat, Oct 3rd", "Today · Mon, Oct 5th") and numbered
+ * 1, 2, 3… straight across the groups. Finished tasks drop out and the rest renumber.
  */
 export function formatList(day: string, tasks: Task[]): string {
-  const heading = formatDay(day, SHORT_DAY);
-  if (tasks.length === 0) return `${heading} — nothing on the list yet.`;
+  if (tasks.length === 0) return `${formatDayHeading(day, day)} — nothing on the list yet.`;
 
   const open = openTasks(tasks);
   const done = tasks.length - open.length;
-  const lines = [`${heading} — ${done}/${tasks.length} done`, ""];
+  const lines = [`${done}/${tasks.length} done today`];
   if (open.length === 0) {
-    lines.push("Everything’s done for today 🎉");
+    lines.push("", "Everything’s done for today 🎉");
   } else {
-    lines.push(...open.map((task, index) => `${index + 1}. ⬜ ${describe(task, day)}`));
+    let number = 0;
+    for (const group of groupByDay(open, (task) => task.task_date)) {
+      lines.push("", formatDayHeading(group.day, day));
+      for (const task of group.items) lines.push(`${++number}. ⬜ ${describe(task, day, false)}`);
+    }
   }
   if (done > 0) {
     lines.push("", `✅ ${done} done today — send /undo to see ${done === 1 ? "it" : "them"}.`);
@@ -50,13 +55,8 @@ export function formatUpcoming(today: string, tasks: Task[]): string {
     return "Nothing scheduled yet. Start a message with a day to plan ahead, e.g. “tomorrow: Call the bank”.";
   }
   const lines = ["Coming up:"];
-  let current = "";
-  for (const task of tasks) {
-    if (task.task_date !== current) {
-      current = task.task_date;
-      lines.push("", describeScheduleDay(current, today));
-    }
-    lines.push(`• ${task.title}`);
+  for (const group of groupByDay(tasks, (task) => task.task_date)) {
+    lines.push("", formatDayHeading(group.day, today), ...group.items.map((task) => `• ${task.title}`));
   }
   return lines.join("\n");
 }
